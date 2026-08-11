@@ -1,0 +1,230 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 220 40% 6%;
+    --foreground: 180 100% 95%;
+
+    --card: 220 35% 8%;
+    --card-foreground: 180 100% 95%;
+
+    --popover: 220 35% 8%;
+    --popover-foreground: 180 100% 95%;
+
+    --primary: 186 100% 42%;
+    --primary-foreground: 220 40% 6%;
+
+    --secondary: 84 81% 44%;
+    --secondary-foreground: 220 40% 6%;
+
+    --muted: 220 30% 15%;
+    --muted-foreground: 180 20% 65%;
+
+    --accent: 186 100% 50%;
+    --accent-foreground: 220 40% 6%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 30% 18%;
+    --input: 220 30% 18%;
+    --ring: 186 100% 50%;
+
+    --radius: 0.75rem;
+    
+    /* Cybersecurity gradient colors */
+    --gradient-start: 186 100% 42%;
+    --gradient-end: 84 81% 44%;
+    
+    /* Glow effects */
+    --glow-cyan: 186 100% 50%;
+    --glow-lime: 84 81% 50%;
+
+    --sidebar-background: 220 35% 8%;
+    --sidebar-foreground: 180 100% 95%;
+    --sidebar-primary: 186 100% 42%;
+    --sidebar-primary-foreground: 220 40% 6%;
+    --sidebar-accent: 220 30% 15%;
+    --sidebar-accent-foreground: 180 100% 95%;
+    --sidebar-border: 220 30% 18%;
+    --sidebar-ring: 186 100% 50%;
+  }
+
+  .dark {
+    --background: 220 40% 6%;
+    --foreground: 180 100% 95%;
+
+    --card: 220 35% 8%;
+    --card-foreground: 180 100% 95%;
+
+    --popover: 220 35% 8%;
+    --popover-foreground: 180 100% 95%;
+
+    --primary: 186 100% 42%;
+    --primary-foreground: 220 40% 6%;
+
+    --secondary: 84 81% 44%;
+    --secondary-foreground: 220 40% 6%;
+
+    --muted: 220 30% 15%;
+    --muted-foreground: 180 20% 65%;
+
+    --accent: 186 100% 50%;
+    --accent-foreground: 220 40% 6%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 30% 18%;
+    --input: 220 30% 18%;
+    --ring: 186 100% 50%;
+    
+    --sidebar-background: 220 35% 8%;
+    --sidebar-foreground: 180 100% 95%;
+    --sidebar-primary: 186 100% 42%;
+    --sidebar-primary-foreground: 220 40% 6%;
+    --sidebar-accent: 220 30% 15%;
+    --sidebar-accent-foreground: 180 100% 95%;
+    --sidebar-border: 220 30% 18%;
+    --sidebar-ring: 186 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+  
+  .glow-cyan {
+    box-shadow: 0 0 20px hsl(var(--glow-cyan) / 0.3), 0 0 40px hsl(var(--glow-cyan) / 0.1);
+  }
+  
+  .glow-lime {
+    box-shadow: 0 0 20px hsl(var(--glow-lime) / 0.3), 0 0 40px hsl(var(--glow-lime) / 0.1);
+  }
+  
+  .circuit-pattern {
+    background-image: 
+      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(0deg, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: 0.1;
+  }
+}
+
+/* Live streaming treatment (cosmetic only, active while the AI streams). */
+/* The wrapper uses display:contents so it renders no box of its own and the
+   prose typography first/last-child margin rules stay equivalent, keeping the
+   generated layout pixel-identical to the un-wrapped case. */
+.bt-streaming {
+  display: contents;
+}
+
+/* Terminal font applied ONLY while streaming (the wrapper is removed when the
+   response finishes, so completed messages keep the normal chat font). */
+.bt-streaming,
+.bt-streaming * {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace !important;
+}
+
+.bt-streaming > :first-child {
+  margin-top: 0 !important;
+}
+
+.bt-streaming > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Blinking block cursor + a tiny breathing binary tail, drawn inline at the
+   end of the last rendered element of the streamed content. The whole tail
+   dims/brightens slowly (subtle fade) instead of hard-flashing, so it reads
+   like a SOC console rather than a matrix rain. */
+.bt-streaming > :last-child::after {
+  content: "▋ 01010001 01100001 01101001";
+  display: inline-block;
+  margin-left: 0.15em;
+  font-size: 0.72em;
+  line-height: 1;
+  vertical-align: 0.15em;
+  color: hsl(152 100% 62%);
+  text-shadow: 0 0 6px hsla(152 100% 60% / 0.9), 0 0 14px hsla(152 100% 60% / 0.4);
+  animation: bt-terminal-tail 1.5s ease-in-out infinite;
+}
+
+/* AI Workspace + floating assistant: persistent SOC-terminal styling for AI
+   responses. Applies BEFORE, DURING, and AFTER streaming (never removed), so a
+   completed answer keeps the monospace font, subtle matrix accent, and soft
+   glow. Softer than the live streaming accent so it stays readable for long
+   sessions. Only wrapped around AI message content — user messages are not
+   touched. */
+.bt-cyber-message,
+.bt-cyber-message * {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+}
+
+.bt-cyber-message {
+  --tw-prose-body: hsl(152 100% 55%);
+  --tw-prose-headings: hsl(152 100% 64%);
+  --tw-prose-bold: hsl(152 100% 64%);
+  --tw-prose-emphasis: hsl(152 100% 52%);
+  --tw-prose-links: hsl(152 100% 58%);
+  --tw-prose-quotes: hsl(152 100% 56%);
+  --tw-prose-counters: hsl(152 100% 50%);
+  --tw-prose-bullets: hsl(152 100% 50%);
+  --tw-prose-hr: hsl(152 60% 38%);
+  --tw-prose-quote-borders: hsl(152 60% 38%);
+  text-shadow: 0 0 14px hsla(152 100% 60% / 0.3);
+}
+
+/* Monospace typeface for the chat input (search/query bar) and user messages.
+   Font only — no accent color or glow, so user messages keep their existing
+   tinted-bubble UI. */
+.bt-mono,
+.bt-mono * {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
+}
+
+/* Floating window user messages: restore the workspace user-bubble text color
+   (foreground cyan-white) instead of the greyed prose-zinc body color, while
+   keeping the mono font and no glow. */
+.bt-user-prose {
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-bold: hsl(var(--foreground));
+  --tw-prose-emphasis: hsl(var(--foreground));
+  --tw-prose-links: hsl(var(--foreground));
+  --tw-prose-quotes: hsl(var(--foreground));
+  --tw-prose-counters: hsl(var(--foreground));
+  --tw-prose-bullets: hsl(var(--foreground));
+  --tw-prose-hr: hsl(var(--border));
+  --tw-prose-quote-borders: hsl(var(--border));
+}
+
+@keyframes bt-terminal-tail {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

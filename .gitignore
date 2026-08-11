@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Environments / secrets
+.env
+.env.*
+!.env.example
+.venv
+env/
+venv/
+ENV/
+
+# Node / frontend
+node_modules/
+.vite/
+*.tsbuildinfo
+
+# Django
+*.sqlite3
+db.sqlite3
+staticfiles/
+media/
+*.pem
+
+# Logs / runtime data
+logs/
+*.log
+data/
+vector_store/
+faiss_index/
+chroma_db/
+qdrant_db/
+*.pt
+*.onnx
+*.safetensors
+
+# Vercel / build output
+.vercel
+dist/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+*:Zone.Identifier

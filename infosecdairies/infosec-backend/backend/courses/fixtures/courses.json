@@ -1,0 +1,122 @@
+[
+  {
+    "model": "courses.course",
+    "pk": 1,
+    "fields": {
+      "title": "Blue Team & SOC Fundamentals",
+      "slug": "blue-team-soc-fundamentals",
+      "description": "Introductory SOC and Blue Team course",
+      "level": "Beginner",
+      "duration_hours": 12,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 2,
+    "fields": {
+      "title": "Log Analysis for Beginners",
+      "slug": "log-analysis-for-beginners",
+      "description": "Learn to read, parse, and understand security logs from Windows, Linux, and network devices",
+      "level": "Beginner",
+      "duration_hours": 8,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 3,
+    "fields": {
+      "title": "SIEM Fundamentals",
+      "slug": "siem-fundamentals",
+      "description": "Master Security Information and Event Management basics",
+      "level": "Beginner",
+      "duration_hours": 10,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 4,
+    "fields": {
+      "title": "Network Security Monitoring",
+      "slug": "network-security-monitoring",
+      "description": "Master deep packet inspection and network-based threat detection",
+      "level": "Intermediate",
+      "duration_hours": 14,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 5,
+    "fields": {
+      "title": "Incident Response Fundamentals",
+      "slug": "incident-response-fundamentals",
+      "description": "Learn the complete incident response lifecycle",
+      "level": "Intermediate",
+      "duration_hours": 12,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 6,
+    "fields": {
+      "title": "Threat Hunting Fundamentals",
+      "slug": "threat-hunting-fundamentals",
+      "description": "Proactively search for threats in your environment",
+      "level": "Advanced",
+      "duration_hours": 14,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 7,
+    "fields": {
+      "title": "Detection Engineering Basics",
+      "slug": "detection-engineering-basics",
+      "description": "Build custom detection rules and analytics for modern SOC environments",
+      "level": "Advanced",
+      "duration_hours": 16,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 8,
+    "fields": {
+      "title": "Malware Analysis Fundamentals",
+      "slug": "malware-analysis-fundamentals",
+      "description": "Analyze malicious software safely with static and dynamic analysis",
+      "level": "Advanced",
+      "duration_hours": 18,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 9,
+    "fields": {
+      "title": "SOC Analyst Learning Path",
+      "slug": "soc-analyst-path",
+      "description": "A structured career-ready program covering SOC skills to threat analysis",
+      "level": "Intermediate",
+      "duration_hours": 20,
+      "is_published": true
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 10,
+    "fields": {
+      "title": "Network Fundamentals",
+      "slug": "network-fundamentals",
+      "description": "Master the foundations of computer networking for cybersecurity",
+      "level": "Beginner",
+      "duration_hours": 16,
+      "is_published": true
+    }
+  }
+]

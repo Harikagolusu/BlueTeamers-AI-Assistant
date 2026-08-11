@@ -1,0 +1,47 @@
+name: "threat_intelligence"
+version: "1.0.0"
+owner: "system"
+description: "Specialized agent for cyber threat intelligence, capable of enriching indicators, correlating intelligence, identifying threat actors and campaigns, and providing intelligence-driven recommendations."
+prompt_template: "threat_intelligence_system"
+model: "${PLATFORM_DEFAULT_MODEL}" # Provider agnostic, resolved at runtime
+tools:
+  - "ioc_lookup_tool"
+  - "reputation_tool"
+  - "threat_actor_tool"
+  - "campaign_lookup_tool"
+  - "indicator_correlation_tool"
+  - "mitre_mapping_tool"
+capabilities:
+  - "threat_intelligence"
+  - "ioc_enrichment"
+  - "actor_attribution"
+  - "mitre_mapping"
+permissions:
+  - "read:threat_intel"
+  - "read:memory"
+  - "write:memory"
+supported_inputs:
+  schema:
+    type: "object"
+    properties:
+      indicators:
+        type: "array"
+        items:
+          type: "string"
+      context:
+        type: "string"
+    required: ["indicators"]
+supported_outputs:
+  schema:
+    type: "object"
+    description: "Follows ThreatIntelligenceResponse schema"
+policies:
+  max_retries: 3
+  timeout_seconds: 120
+tags:
+  - "security"
+  - "cti"
+  - "intelligence"
+runtime_options:
+  temperature: 0.1
+  max_tokens: 4000

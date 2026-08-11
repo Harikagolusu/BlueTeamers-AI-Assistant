@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_URL=postgresql://ai_user:ai_pass@db:5432/ai_db
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - vector_data:/app/vector_store
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ai_user
+      POSTGRES_PASSWORD: ai_pass
+      POSTGRES_DB: ai_db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_user -d ai_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  redis_data:
+  vector_data:

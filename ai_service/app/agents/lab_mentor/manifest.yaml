@@ -1,0 +1,10 @@
+name: "lab_mentor"
+version: "1.0.0"
+description: "Adaptive mentoring agent for guiding learners through labs without revealing solutions."
+type: "educational"
+author: "BlueTeamers"
+prompt_template: "lab_mentor.system"
+model: "gpt-4-turbo"
+configuration:
+  max_retries: 3
+  timeout_seconds: 120

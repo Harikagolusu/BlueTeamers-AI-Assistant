@@ -1,0 +1,35 @@
+name: "AssessmentCoach"
+version: "1.0.0"
+description: "Evaluates learner understanding, measures competencies, and generates adaptive assessments."
+author: "BlueTeamers Platform"
+
+capabilities:
+  - ASSESSMENT
+  - COMPETENCY_EVALUATION
+  - READINESS_ASSESSMENT
+  - ADAPTIVE_ASSESSMENT
+  - KNOWLEDGE_EVALUATION
+  - PRACTICAL_EVALUATION
+  - SCENARIO_EVALUATION
+
+tools:
+  - knowledge_assessment
+  - practical_assessment
+  - scenario_assessment
+  - competency_evaluation
+  - gap_analysis
+  - adaptive_question
+  - feedback_generation
+  - readiness_assessment
+  - recommendation_engine
+  - assessment_analytics
+
+dependencies:
+  - AgentOrchestrationService
+  - WorkflowEngine
+  - CapabilityRegistry
+
+permissions:
+  - read_metrics
+  - write_metrics
+  - execute_evaluations

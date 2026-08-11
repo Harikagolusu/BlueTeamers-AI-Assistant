@@ -1,0 +1,55 @@
+name: "SOC Analyst"
+version: "1.0.0"
+owner: "system"
+description: "Tier-1/Tier-2 Security Operations Center analyst for investigating alerts and mapping to MITRE."
+prompt_template: "soc_analyst_system"
+model: "gpt-4-turbo"
+tools:
+  - "MITRETool"
+  - "KnowledgeSearchTool"
+  - "LogParserTool"
+  - "IOCExtractorTool"
+  - "IndicatorFetcherTool"
+  - "TimelineTool"
+capabilities:
+  - "INVESTIGATION"
+  - "LOG_ANALYSIS"
+permissions:
+  - "READ_LOGS"
+  - "SEARCH_KNOWLEDGE"
+supported_inputs:
+  type: "object"
+  properties:
+    alert_data:
+      type: "string"
+supported_outputs:
+  type: "object"
+  properties:
+    summary:
+      type: "string"
+    severity:
+      type: "string"
+    confidence:
+      type: "number"
+    analysis:
+      type: "string"
+    mitre_mapping:
+      type: "array"
+    evidence:
+      type: "array"
+    investigation_steps:
+      type: "array"
+    containment_recommendations:
+      type: "array"
+    detection_recommendations:
+      type: "array"
+    references:
+      type: "array"
+policies:
+  require_human_approval_for_containment: true
+tags:
+  - "soc"
+  - "security"
+runtime_options:
+  temperature: 0.1
+  max_tokens: 4000

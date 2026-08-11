@@ -1,0 +1,19 @@
+node_modules
+
+# Secrets and environment files
+.env
+.env.local
+rzp-key.csv
+imp/
+infosec-backend/backup_railway.ps1
+infosec-backend/backend/env_vars.txt
+railway code no push.txt
+
+# Django generated files
+**/__pycache__/
+*.pyc
+infosec-backend/backend/db.sqlite3
+infosec-backend/backend/staticfiles/
+infosec-backend/backend/media/
+.vercel
+.env*

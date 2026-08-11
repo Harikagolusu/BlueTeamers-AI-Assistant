@@ -1,0 +1,10 @@
+name: "learning_coach"
+version: "1.0.0"
+description: "Personalized learning orchestrator mapping long-term roadmaps and orchestrating educational journeys."
+type: "educational"
+author: "BlueTeamers"
+prompt_template: "learning_coach.system"
+model: "gpt-4-turbo"
+configuration:
+  max_retries: 3
+  timeout_seconds: 120

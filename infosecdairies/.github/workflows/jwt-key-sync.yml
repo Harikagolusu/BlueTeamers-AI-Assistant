@@ -1,0 +1,27 @@
+name: JWT key sync check
+
+# Guards against the frontend's hardcoded RS256 public key (src/lib/jwtVerify.ts)
+# drifting from the backend's signing keypair (infosec-backend/backend/jwt_public.pem).
+# A mismatch silently breaks every login with "invalid token signature" (see commit 8fbef57).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/lib/jwtVerify.ts"
+      - "infosec-backend/backend/jwt_public.pem"
+      - "scripts/check-jwt-key-sync.mjs"
+  pull_request:
+    paths:
+      - "src/lib/jwtVerify.ts"
+      - "infosec-backend/backend/jwt_public.pem"
+      - "scripts/check-jwt-key-sync.mjs"
+
+jobs:
+  check-jwt-key-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/check-jwt-key-sync.mjs

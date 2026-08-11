@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment
+.env
+.env.*
+!.env.example
+.venv
+env/
+venv/
+ENV/
+
+# VS Code / PyCharm
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# AI / LangChain / FAISS / Vector DBs
+faiss_index/
+vector_store/
+chroma_db/
+qdrant_db/
+*.pt
+*.onnx
+*.safetensors
+
+# Logs
+logs/
+*.log
+
+# Embedded infosecdairies project (frontend + Django backend)
+infosecdairies/node_modules/
+infosecdairies/dist/
+infosecdairies/.vercel/
+infosecdairies/infosec-backend/backend/db.sqlite3
+infosecdairies/infosec-backend/backend/staticfiles/
+infosecdairies/infosec-backend/backend/media/
+infosecdairies/infosec-backend/backend/jwt_private.pem
+infosecdairies/infosec-backend/backend/jwt_public.pem
+
+# Type checking / Formatting
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/

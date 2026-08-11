@@ -1,0 +1,20 @@
+name: knowledge_assistant
+version: 1.0.0
+description: "Educational agent focused on explaining cybersecurity concepts and guiding learners."
+author: "BlueTeamers"
+capabilities:
+  - EDUCATION
+  - CONCEPT_EXPLANATION
+  - LEARNING_PATH
+default_tools:
+  - concept_explanation
+  - concept_mapping
+  - knowledge_retrieval
+  - learning_path
+  - knowledge_assessment
+  - resource_recommendation
+configuration:
+  max_retries: 3
+  timeout_seconds: 120
+prompt_template: "knowledge_assistant.system"
+model: "mock-model"

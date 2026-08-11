@@ -1,0 +1,111 @@
+from enum import Enum
+from typing import Dict, Any, List, Optional
+from pydantic import BaseModel, Field
+
+class ExecutionStatus(str, Enum):
+    SUCCESS = "SUCCESS"
+    DEGRADED = "DEGRADED"
+    FAILED = "FAILED"
+    BLOCKED = "BLOCKED"
+
+from pydantic import BaseModel, Field, ConfigDict
+
+class ExecutionResult(BaseModel):
+    """
+    Standardizes all engine outputs, vastly simplifying ResponseComposition.
+    """
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    status: ExecutionStatus = Field(..., description="The outcome of the execution engine")
+    engine_name: str = Field(..., description="Name of the engine that produced this result")
+    
+    message: str = Field(default="", description="The final text response or synthesis")
+    
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Engine specific metadata")
+    citations: List[Dict[str, Any]] = Field(default_factory=list, description="Citations used for the response")
+    tool_outputs: List[Dict[str, Any]] = Field(default_factory=list, description="Raw outputs from Tool Calling Framework")
+    documents: List[Dict[str, Any]] = Field(default_factory=list, description="Raw documents retrieved by RAG")
+    
+    reasoning_metadata: Dict[str, Any] = Field(default_factory=dict, description="Internal reasoning steps (e.g. CoT)")
+    
+    latency_ms: float = Field(default=0.0, description="Execution time in milliseconds")
+    cost: float = Field(default=0.0, description="Estimated cost of execution")
+    token_usage: Dict[str, int] = Field(default_factory=dict, description="Token consumption metrics")
+    
+    errors: List[Dict[str, Any]] = Field(default_factory=list, description="Non-fatal or fatal errors encountered")
+    stream: bool = Field(default=False, description="Indicates if this result is meant to be a stream generator")
+    
+    @classmethod
+    def success(cls, engine: str, message: str, **kwargs) -> "ExecutionResult":
+        return cls(status=ExecutionStatus.SUCCESS, engine_name=engine, message=message, **kwargs)
+    
+    @classmethod
+    def failed(cls, engine: str, errors: List[Dict[str, Any]], **kwargs) -> "ExecutionResult":
+        return cls(status=ExecutionStatus.FAILED, engine_name=engine, errors=errors, **kwargs)
+
+from pydantic import BaseModel, Field, ConfigDict, model_validator
+
+class ChatRequest(BaseModel):
+    """Standard inbound payload for Chat API."""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    conversation_id: Optional[str] = None
+    message: Optional[str] = None
+    query: Optional[str] = None
+    stream: bool = False
+    language: Optional[str] = None
+    images: Optional[List[str]] = None
+    files: Optional[List[Dict[str, Any]]] = None
+    token: Optional[str] = None
+    user_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+    client_id: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def map_query_and_message(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            q = data.get("query")
+            m = data.get("message")
+            if q and not m:
+                data["message"] = q
+            elif m and not q:
+                data["query"] = m
+            
+            # Ensure at least one is provided
+            if not data.get("message") and not data.get("query"):
+                raise ValueError("Either 'message' or 'query' must be provided")
+        return data
+
+class ChatResponse(BaseModel):
+    """Standard outbound payload for Chat API."""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    conversation_id: str
+    message: str
+    query: Optional[str] = None # Added for compatibility
+    answer: Optional[str] = None # Added for compatibility
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    used_tools: List[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def map_message_and_answer(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            m = data.get("message")
+            a = data.get("answer")
+            if m and not a:
+                data["answer"] = m
+            elif a and not m:
+                data["message"] = a
+        return data
+
+from app.platform.models import UserProfile, Course, Progress, Recommendation, Certificate
+
+class PlatformContextPayload(BaseModel):
+    profile: Optional[UserProfile] = None
+    courses: List[Course] = []
+    progress: List[Progress] = []
+    recommendations: List[Recommendation] = []
+    certificates: List[Certificate] = []
+
+class SessionInitializationResponse(BaseModel):
+    welcome_message: str
+    platform_context: PlatformContextPayload

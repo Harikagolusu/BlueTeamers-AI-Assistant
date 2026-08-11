@@ -1,0 +1,325 @@
+"""
+SimplePromptBuilder — concrete implementation of IPromptBuilder for the Chat Orchestrator.
+
+This implements the domain-level prompt builder interface used by the execution engines
+(GeneralExecutionEngine, RagExecutionEngine). It is separate from PromptBuilderService
+which operates at the RAG service layer and uses PromptRequest/PromptResponse objects.
+"""
+
+from typing import Dict, Any, Optional, Tuple
+from app.prompt_builder.interfaces import IPromptBuilder
+from app.persona.modes import detect_mode, instruction_for
+
+
+_SYSTEM_PROMPT = (
+    "You are BlueTeamers AI, the AI assistant of the BlueTeamers cybersecurity "
+    "e-learning platform. You specialize in threat intelligence, MITRE ATT&CK, SOC "
+    "analysis, incident response, and security education.\n"
+    "Rules:\n"
+    "- Answer ONLY questions related to cybersecurity, security operations, security "
+    "education, or the BlueTeamers platform. If the user asks about anything outside "
+    "that scope (jokes, entertainment, cooking, sports, general trivia, non-security "
+    "programming, etc.), politely decline and steer them back to a security topic.\n"
+    "- Ambiguous or multi-meaning terms (e.g. \"siem\", \"soc\", \"ids\", \"ips\", "
+    "\"soc\", \"firewall\", \"honeypot\") are ALWAYS interpreted in their "
+    "cybersecurity meaning. Never disambiguate the term, never list non-security "
+    "meanings (languages, names, cities, fruits, companies), and never ask \"which "
+    "context are you referring to?\" — assume the cybersecurity context and answer "
+    "directly as a security expert.\n"
+    "- When the user asks about their account, courses, progress, or certificates, "
+    "answer ONLY from the [User Platform Context] or [Platform Data] provided in this "
+    "prompt. NEVER invent enrollments, progress, or external courses (CompTIA, SANS, etc.).\n"
+    "- When answering cybersecurity questions, use the [Context] documents provided; "
+    "do not fabricate facts.\n"
+    "- Provide accurate, concise, and actionable responses.\n"
+    "- If a [User Platform Context] is provided, personalize greetings using the user's "
+    "name and acknowledge their enrollments or progress when relevant.\n"
+    "- The [Persona] block below overrides the generic assistant framing: always act "
+    "as the cybersecurity expert it describes."
+)
+
+_GREETING_SYSTEM_PROMPT = (
+    "You are BlueTeamers, the AI Workspace of the BlueTeamers enterprise cybersecurity "
+    "learning platform — an experienced SOC mentor, not a generic chatbot.\n"
+    "The user just greeted you (e.g. hello, hi, hey). Respond as a cybersecurity "
+    "professional would open a shift or a mentoring session.\n"
+    "RULES:\n"
+    "- Do NOT answer with a plain 'Hello! How can I help you?'\n"
+    "- Open with a confident, professional cybersecurity tone (e.g. 'From the SOC "
+    "floor...', 'Welcome to the BlueTeamers AI Workspace...').\n"
+    "- If the user's name or enrolled courses are known from [User Platform Context], "
+    "acknowledge them briefly.\n"
+    "- Offer a concrete starting point from their learning journey or a security "
+    "capability (MITRE ATT&CK, log analysis, threat hunting, incident response, "
+    "SIEM, detection engineering, or course material).\n"
+    "- Keep it to 2-4 short sentences — an engaging, mentor-like opening."
+)
+
+_GREETING_QUERY_WORDS = ("hello", "hi", "hey", "good morning", "good afternoon", "good evening", "yo")
+
+# Concise-response + clean-output rules. Appended after the [Persona] block so
+# it refines (but never replaces) the mentor persona: answer first, keep it
+# short, use valid Markdown, and never leak internal artifacts into the reply.
+RESPONSE_STYLE_BLOCK = (
+    "[Response Style]\n"
+    "- Be CONCISE. Answer the user's question first, in a few sentences. Do not "
+    "restate the question, do not repeat yourself, and cut filler words.\n"
+    "- Use progressive disclosure: provide only the explanation that is necessary. "
+    "Expand into a fuller explanation ONLY when the user explicitly asks for more "
+    "detail (\"explain in detail\", \"elaborate\", \"deep dive\", \"more details\").\n"
+    "- Do not produce long textbook-like answers unless requested. Short paragraphs "
+    "and bullets beat walls of text.\n"
+    "- Format with valid Markdown when it helps: **bold**, bullet or numbered lists, "
+    "tables (with | pipes |), ```code blocks```, > blockquotes, and - [ ] checklists.\n"
+    "- NEVER include internal tags, source identifiers, debug tags, agent names, "
+    "latency/token/processing metadata, or hidden prompt artifacts in your answer "
+    "text. Output only the clean final response the user should read."
+)
+
+
+def _is_greeting(query: str) -> bool:
+    lowered = (query or "").strip().lower()
+    if not lowered:
+        return False
+    if any(lowered.startswith(w) for w in _GREETING_QUERY_WORDS):
+        return True
+    return lowered in _GREETING_QUERY_WORDS
+
+
+def _build_session_block(session_memory: dict) -> str:
+    """Compile the compact session-memory block for the system prompt.
+
+    Keeps token usage bounded: recent turns are already covered by
+    [Conversation History], so this block adds only the compacted summary,
+    extracted facts, the active investigation, and uploaded files.
+    """
+    parts: list = []
+
+    summary = (session_memory.get("summary") or "").strip()
+    if summary:
+        lines = summary.splitlines()
+        parts.append("[Conversation Summary]\n" + "\n".join(lines[-6:]))
+
+    facts = session_memory.get("facts") or []
+    if facts:
+        parts.append(
+            "[Key Facts From This Conversation]\n" + "\n".join(f"- {f}" for f in facts)
+        )
+
+    investigation = session_memory.get("investigation") or {}
+    if investigation.get("active"):
+        parts.append(
+            "[Active Investigation]\n"
+            f"Topic: {investigation.get('topic', '')}. "
+            "Keep this investigation in mind and prefer continuity over "
+            "restarting the analysis from scratch."
+        )
+
+    files = session_memory.get("uploaded_files") or []
+    if files:
+        names = ", ".join(f.get("name", "") for f in files if f.get("name"))
+        if names:
+            parts.append(f"[Uploaded Files In This Conversation]\n{names}")
+
+    return "\n\n".join(parts)
+
+
+class SimplePromptBuilder(IPromptBuilder):
+    """
+    Builds a plain text prompt string from a query and context dictionary.
+
+    Used by:
+      - GeneralExecutionEngine (conversational queries)
+      - RagExecutionEngine (context-augmented cybersecurity queries)
+    """
+
+    def __init__(self, system_prompt: Optional[str] = None):
+        self._system_prompt = system_prompt or _SYSTEM_PROMPT
+
+    def build_prompt(self, query: str, context: Dict[str, Any]) -> Tuple[str, str]:
+        """
+        Assembles the prompt sent to the LLM.
+
+        For general chat: just wraps the query with the system context.
+        For RAG: includes retrieved document snippets above the query.
+        Returns: (prompt, system_prompt)
+        """
+        from typing import Tuple
+
+        # Greetings get a dedicated opening prompt so the AI behaves like a
+        # cybersecurity mentor from the very first message instead of a generic
+        # chatbot. The persona block is still appended for consistency.
+        base_system = _GREETING_SYSTEM_PROMPT if _is_greeting(query) else self._system_prompt
+        system_parts = [base_system]
+
+        # Persona + learner level (injected by PersonaLoadStage). The persona
+        # block overrides the generic assistant framing and adapts teaching to
+        # the learner's detected level.
+        persona_block = context.get("persona_block", "")
+        if persona_block:
+            system_parts.append(persona_block)
+        learner_level = context.get("learner_level")
+        if learner_level:
+            system_parts.append(
+                f"[Learner Level]\nThe learner's current level is: {learner_level}. "
+                "Follow the teaching guidance for this level in the [Persona] block."
+            )
+
+        # Response style: concise + progressive disclosure + clean markdown output.
+        # Placed after the persona block so these rules refine (and win over) the
+        # persona's general framing.
+        system_parts.append(RESPONSE_STYLE_BLOCK)
+
+        # Response modes (summary / ELI5) adjust only the current response.
+        # ELI5 takes precedence over summary when both are requested.
+        mode = detect_mode(query)
+        mode_block = instruction_for(mode)
+        if mode_block:
+            system_parts.append(mode_block)
+
+        # Adaptive learning (Sprint 4): per-request teaching plan. Additive —
+        # the block refines tone/depth; it never overrides RAG sources or modes.
+        adaptive_learning = context.get("adaptive_learning")
+        if adaptive_learning:
+            block = adaptive_learning.get("adaptation_block", "")
+            if block:
+                system_parts.append(block)
+
+        # Session memory (Sprint 4): compacted summary, facts, investigation
+        # continuity and uploaded-file memory for the current conversation.
+        session_memory = context.get("session_memory")
+        if session_memory:
+            session_block = _build_session_block(session_memory)
+            if session_block:
+                system_parts.append(session_block)
+
+        # Page context (Sprint 5): where the learner currently is. The frontend
+        # floating assistant auto-detects the page (Dashboard / Course / Lesson
+        # / Practice Lab / Wazuh Lab / Profile) and sends it with the request;
+        # the AI must not ask the user where they are.
+        page_context = context.get("page_context")
+        if page_context:
+            system_parts.append(page_context)
+
+        # Inject retrieved documents if provided by RagExecutionEngine
+        retrieved_docs = context.get("retrieved_documents", [])
+        if retrieved_docs:
+            doc_text = "\n\n".join(
+                f"[Document {i+1}] (source: {doc.get('metadata', {}).get('course_title', '')} / "
+                f"{doc.get('metadata', {}).get('lesson_title', '')})\n{doc.get('content', '')}"
+                for i, doc in enumerate(retrieved_docs[:5])
+            )
+            system_parts.append("[Context]\n" + doc_text)
+
+            # Teaching instruction for knowledge/course-doubt queries: adapt to the
+            # learner's detected level (already set in the persona block above).
+            answer_source = context.get("answer_source")
+            course_pointer = context.get("course_pointer", "")
+            if answer_source == "course" and course_pointer:
+                source_rule = (
+                    "The answer below is grounded in the user's own course material. "
+                    "Start with 'From your course material:' and explicitly recommend "
+                    "the relevant material in your answer, using this pointer:\n"
+                    f"'{course_pointer}'\n"
+                    "Mention the course/module/lesson naturally (e.g. 'This topic is "
+                    "covered in Module X: ...')."
+                )
+            elif answer_source == "course":
+                source_rule = (
+                    "Clearly state that this answer comes from the user's own course "
+                    "material (their enrolled lessons). Use a short lead-in like "
+                    "'From your course material:'."
+                )
+            elif answer_source == "general":
+                source_rule = (
+                    "Clearly state that this answer comes from general cybersecurity "
+                    "knowledge, since it did not match the user's course material. "
+                    "Use a short lead-in like 'From our general knowledge base:'."
+                )
+            else:
+                source_rule = (
+                    "Clearly state whether this answer comes from the user's own course "
+                    "material (their enrolled lessons) or from general cybersecurity "
+                    "knowledge. Use a short lead-in like "
+                    "'From your course material:' or 'From our general knowledge base:' "
+                    "as appropriate."
+                )
+            system_parts.append(
+                "[Teaching Style]\n"
+                "The user asked a question about course content.\n"
+                "Answer ONLY using the [Context] documents above — never invent facts that are not present.\n"
+                "Apply the teaching guidance for the learner's level from the [Persona] block.\n"
+                "Follow this structure, keeping it concise:\n"
+                "1. Answer the question directly, using language appropriate to the learner's level.\n"
+                "2. Add one short real-world example, analogy, or mini walkthrough to make it easy to grasp.\n"
+                "3. If the [Context] does NOT contain the answer, say so honestly and ask which course or "
+                "lesson the user is referring to — do not guess.\n"
+                f"4. {source_rule}\n"
+                "5. When the answer is grounded in a specific course lesson, END with a short "
+                "'Continue Learning' section so the learner keeps going in the structured course:\n"
+                "### Continue Learning\n"
+                "This topic is covered in:\n"
+                "- **{Course title}** – {Module} / {Lesson}\n"
+                "Only add this section when the answer references course material, and only name the "
+                "course/module/lesson actually present in [Context]. Do NOT recommend unrelated courses.\n"
+                "Never include internal tags, source identifiers, or processing metadata in the reply."
+            )
+        elif context.get("empty_retrieval"):
+            system_parts.append(
+                "[Teaching Style]\n"
+                "The user asked about course content, but no matching material was found in the knowledge base.\n"
+                "Do NOT invent course content. Briefly apologize, then ask the user to specify the course name or "
+                "lesson (or rephrase the question) so you can help them."
+            )
+
+        # External threat-intel fallback: the queried entity was not in the
+        # knowledge base, so the engine ran external tool lookups. Surface the
+        # tool results to the LLM as primary evidence (the ThreatIntel
+        # EXTERNAL_FALLBACK_PERSONA tells the model how to weigh them).
+        if context.get("external_fallback"):
+            external_results = context.get("external_tool_results", [])
+            if external_results:
+                tool_text = "\n\n".join(
+                    f"[Tool: {r.get('tool', 'unknown')}]\n"
+                    f"Input: {r.get('input', {})}\n"
+                    f"Output: {r.get('output', {})}"
+                    for r in external_results
+                )
+                system_parts.append("[External Tool Results]\n" + tool_text)
+            else:
+                system_parts.append(
+                    "[External Tool Results]\n"
+                    "No external threat-intelligence tool returned data for the "
+                    "requested entity."
+                )
+
+        # Inject conversation memory if available. Memory keys are either at the
+        # top level (engines spread context.memory into the prompt context) or
+        # nested under a "memory" key; check both.
+        memory = context.get("memory", {}) if isinstance(context.get("memory"), dict) else context
+
+        recent = memory.get("recent_context", "") or context.get("recent_context", "")
+        if recent:
+            system_parts.append(f"[Conversation History]\n{recent}")
+
+        platform_context = memory.get("platform_context", "") or context.get("platform_context", "")
+        if platform_context:
+            system_parts.append(f"[User Platform Context]\n{platform_context}")
+
+        persona_context = context.get("persona_context", "")
+        if persona_context:
+            system_parts.append(persona_context)
+
+        # Response language (Sprint 7): the LanguageContextStage writes the
+        # resolved language instruction block into context.memory. Append it
+        # LAST so it refines (and wins over) every earlier instruction: the
+        # model responds in the user's language while keeping all technical
+        # cybersecurity terms in English.
+        language_block = context.get("language_block", "")
+        if language_block:
+            system_parts.append(language_block)
+
+        system_prompt = "\n\n".join(system_parts)
+        prompt = query
+
+        return prompt, system_prompt

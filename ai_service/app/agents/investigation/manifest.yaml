@@ -1,0 +1,33 @@
+name: "investigation_agent"
+version: "1.0.0"
+owner: "system"
+description: "Orchestration-focused agent that coordinates investigations, correlates evidence, and produces educational investigation reports by leveraging expert agents."
+prompt_template: "investigation_agent_system"
+model: "${PLATFORM_DEFAULT_MODEL}"
+capabilities:
+  - "orchestration"
+  - "evidence_correlation"
+  - "timeline_generation"
+  - "investigation_summary"
+permissions:
+  - "read_memory"
+  - "write_memory"
+  - "invoke_agents"
+supported_inputs:
+  evidence_items: "List[Dict[str, Any]]"
+supported_outputs:
+  investigation_response: "InvestigationResponse"
+policies:
+  require_human_approval: false
+tags:
+  - "orchestration"
+  - "investigation"
+  - "blue_team"
+tools:
+  - "evidence_collection_tool"
+  - "evidence_correlation_tool"
+  - "investigation_planning_tool"
+  - "incident_timeline_tool"
+  - "investigation_summary_tool"
+runtime_options:
+  timeout_ms: 300000
