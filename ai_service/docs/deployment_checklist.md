@@ -1,5 +1,0 @@
-- [x] React frontend dependencies installed.
-- [x] Backend dependencies synced.
-- [x] Local Ollama installed and running.
-- [x] Model qwen2.5:7b pulled and accessible.
-- [x] Environment variables configured.
