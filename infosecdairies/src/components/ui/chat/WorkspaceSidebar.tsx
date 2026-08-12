@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo-color.png';
 import type { useConversations } from '@/hooks/useConversations';
 
 export interface WorkspaceSidebarProps {
@@ -108,7 +108,12 @@ export const WorkspaceSidebar = ({
         <div className="flex flex-col h-full">
           {/* Brand header */}
           <div className="flex items-center gap-3 px-4 py-4 border-b border-border/50">
-            <img src={logo} alt="BlueTeamers" className="h-9 w-9 object-contain" />
+            <div className="relative shrink-0">
+              <div className="relative overflow-hidden rounded-md border border-border/60">
+                <img src={logo} alt="BlueTeamers" className="h-9 w-9 object-contain" />
+              </div>
+              <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 h-3 w-3 rounded-full border-2 border-background bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            </div>
             <div className="min-w-0 leading-tight">
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-sm text-foreground truncate">

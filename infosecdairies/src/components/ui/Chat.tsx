@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { User, Trash2, Star } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logo from '@/assets/logo-color.png';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatInput } from './chat/ChatInput';
@@ -185,12 +185,15 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
               return (
                 <div key={idx} className={`flex gap-2.5 sm:gap-4 animate-in fade-in slide-in-from-bottom-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                   {/* Avatar */}
-                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all mt-1 ${
+                  <div className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all mt-1 ${
                     msg.role === 'user' 
                       ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_10px_rgba(0,186,216,0.1)]' 
                       : 'bg-zinc-900 border-zinc-700 text-foreground'
                   }`}>
                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <img src={logo} alt="BlueTeamers" className="w-full h-full rounded-md object-contain" />}
+                    {msg.role !== 'user' && (
+                      <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 h-3 w-3 rounded-full border-2 border-background bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    )}
                   </div>
 
                   {/* Message Content */}
@@ -344,9 +347,9 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
 const TypingIndicator = () => {
   return (
     <div className="flex gap-4 items-end animate-fade-in">
-      <div className="relative w-8 h-8 shrink-0 overflow-hidden rounded-lg border border-primary/30 shadow-[0_0_15px_rgba(0,186,216,0.2)] animate-pulse-glow">
-        <img src={logo} alt="BlueTeamers" className="h-full w-full object-cover" />
-        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
+      <div className="relative w-8 h-8 shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 shadow-[0_0_15px_rgba(0,186,216,0.2)]">
+        <img src={logo} alt="BlueTeamers" className="h-full w-full rounded-md object-contain" />
+        <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 h-3 w-3 rounded-full border-2 border-background bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
       </div>
       <div className="flex items-center gap-1 px-4 py-3 rounded-2xl rounded-bl-sm bg-zinc-900/50 border border-zinc-800">
         {[0, 1, 2].map((i) => (
