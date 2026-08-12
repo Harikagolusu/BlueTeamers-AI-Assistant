@@ -94,7 +94,7 @@ export const FloatingAssistant: React.FC = () => {
     chatState,
   } = useAiAssistant();
   const { isAuthenticated } = useAuth();
-  const { messages, sendMessage, isLoading, stopGenerating, initializeSession, error, language, setLanguage } = chatState;
+  const { messages, sendMessage, isLoading, stopGenerating, syncFromSession, error, language, setLanguage } = chatState;
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -282,9 +282,11 @@ export const FloatingAssistant: React.FC = () => {
   }, [location.pathname, isOpen, close]);
 
   // Initialize/restore the shared conversation when the window first opens.
+  // syncFromSession always re-reads sessionStorage so a conversation typed in
+  // the full /chat workspace appears here too (not only a fresh session).
   useEffect(() => {
     if (isOpen) {
-      initializeSession();
+      syncFromSession();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -458,7 +460,7 @@ export const FloatingAssistant: React.FC = () => {
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1" ref={scrollRef}>
+        <ScrollArea className="min-h-0 flex-1" ref={scrollRef}>
           <div className="flex flex-col gap-3 px-3 py-3">
             {messages.length === 0 && !isLoading && (
               <div className="mx-auto mt-6 max-w-[240px] text-center">
@@ -467,7 +469,7 @@ export const FloatingAssistant: React.FC = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {isGuest
-                    ? "Ask anything about this page — no login needed. Login and join a course for unlimited AI."
+                    ? "Ask anything about this page — no login needed. Login to open the full AI Workspace with your free chats."
                     : "Ask anything about the page you're on, your courses, or BlueTeamers in general."}
                 </p>
                 {isFree && (

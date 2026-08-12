@@ -83,7 +83,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
   };
 
   return (
-    <div className="flex flex-col w-full bg-zinc-950/80 backdrop-blur-xl border border-primary/20 rounded-2xl p-3 shadow-2xl relative">
+    <div className="flex flex-col w-full bg-zinc-950/80 backdrop-blur-xl border border-primary/20 rounded-full p-1.5 pr-2 shadow-2xl relative">
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3 px-1">
@@ -125,7 +125,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
         <button
           type="button"
           onClick={triggerFileSelect}
-          className="p-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+          className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
           title="Attach files or images"
         >
           <Paperclip className="w-5 h-5" />
@@ -145,7 +145,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Message BlueTeamers AI..."
-          className="bt-mono flex-1 max-h-[200px] min-h-[44px] bg-transparent border-0 resize-none focus:outline-none focus:ring-0 text-sm leading-relaxed p-2.5 text-foreground placeholder:text-muted-foreground scrollbar-thin scrollbar-thumb-zinc-700"
+          className="bt-mono flex-1 max-h-[200px] min-h-[34px] bg-transparent border-0 resize-none focus:outline-none focus:ring-0 text-sm leading-relaxed p-2 text-foreground placeholder:text-muted-foreground scrollbar-thin scrollbar-thumb-zinc-700"
           rows={1}
           disabled={isLoading}
         />
@@ -156,7 +156,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
             variant="destructive"
             size="icon"
             onClick={onStop}
-            className="h-10 w-10 shrink-0 rounded-xl transition-all"
+            className="h-9 w-9 shrink-0 rounded-full transition-all"
             title="Stop generation"
           >
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -166,7 +166,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
             type="button" 
             onClick={handleSubmit}
             disabled={!input.trim() && attachments.length === 0}
-            className="h-10 w-10 shrink-0 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_10px_rgba(0,186,216,0.3)] disabled:bg-muted disabled:shadow-none transition-all"
+            className="h-9 w-9 shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_10px_rgba(0,186,216,0.3)] disabled:bg-muted disabled:shadow-none transition-all"
           >
             <Send className="w-4 h-4 ml-0.5" />
           </Button>

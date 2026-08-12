@@ -312,4 +312,8 @@ def get_chat_service() -> IChatService:
     ]
 
     orchestrator = ChatOrchestrator(stages)
-    return ChatService(orchestrator)
+    return ChatService(
+        orchestrator,
+        memory_manager=memory_manager,
+        conversation_service=get_conversation_service(),
+    )

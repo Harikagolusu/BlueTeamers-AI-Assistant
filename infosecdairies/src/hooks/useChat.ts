@@ -586,6 +586,32 @@ export function useChat(onNewConversation?: (id: string) => void) {
     }
   }, [messages.length]);
 
+  // Sync the floating assistant to the latest conversation persisted by the
+  // /chat workspace. Unlike initializeSession (which only restores when THIS
+  // instance is empty), it always re-reads sessionStorage so reopening the
+  // floating window reflects the full-screen conversation even though this
+  // instance already holds older in-memory messages. Falls back to the normal
+  // session init when there is nothing meaningful saved.
+  const syncFromSession = useCallback(async () => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.some((m: ChatMessage) => m && m.role === 'user')) {
+          setMessages(parsed);
+          const savedId = sessionStorage.getItem(CONVERSATION_ID_STORAGE_KEY);
+          if (savedId) {
+            setConversationId(savedId);
+          }
+          return;
+        }
+      }
+    } catch {
+      // Corrupt/unavailable storage -> fall through to a fresh session.
+    }
+    await initializeSession();
+  }, [initializeSession]);
+
   return {
     messages,
     sendMessage,
@@ -598,6 +624,7 @@ export function useChat(onNewConversation?: (id: string) => void) {
     startNewConversation,
     loadConversation,
     initializeSession,
+    syncFromSession,
     conversationId,
     language,
     setLanguage,

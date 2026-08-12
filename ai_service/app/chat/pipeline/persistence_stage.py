@@ -42,6 +42,30 @@ class PersistenceStage(IExecutionStage):
         query = context.metadata.get("query") or ""
         ai_message = response.message or ""
 
+        # Streaming engines return a "[Streaming Generator]" placeholder whose
+        # real text only exists behind the SSE generator. Persisting it now
+        # would pollute the conversation history and the short-term memory
+        # window with fake content, so defer the whole turn to ChatService,
+        # which persists the actual streamed text once the stream completes.
+        result = context.metadata.get("execution_result")
+        if (
+            context.streaming_mode
+            and result is not None
+            and isinstance(getattr(result, "metadata", None), dict)
+            and "generator" in result.metadata
+            and ai_message == "[Streaming Generator]"
+        ):
+            result.metadata["_pending_turn"] = {
+                "query": query,
+                "session_user": context.session_user,
+                "tenant_id": context.tenant_id or "default",
+                "memory_session_user": _memory_session_user(context),
+                "conversation_id": context.metadata.get("conversation_id"),
+                "conversation_metadata": self._extract_conversation_metadata(context, response),
+                "trace_id": str(context.trace_id),
+            }
+            return context
+
         turn_data = {
             "query": query,
             "response": ai_message,

@@ -78,9 +78,10 @@ class Settings(BaseSettings):
     # OmniRoute (development default)
     OMNIROUTE_API_KEY: Optional[str] = None
     OMNIROUTE_BASE_URL: Optional[str] = None
-    # Pinned off the nominal default (auto/best-chat returns a single garbage
-    # token via the local OmniRoute gateway); auto/best-reasoning answers fully.
-    OMNIROUTE_MODEL: str = "auto/best-reasoning"
+    # Pinned to a single deepseek model via the local OmniRoute gateway.
+    # auto/* combos degrade to low-quality free providers (single garbage
+    # tokens); oc/deepseek-v4-flash-free answers fully and keeps context.
+    OMNIROUTE_MODEL: str = "oc/deepseek-v4-flash-free"
 
     # MCP servers (config-driven; see app/mcp/config.py).
     #   MCP_SERVERS_CONFIG: inline JSON string, e.g.

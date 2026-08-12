@@ -140,8 +140,7 @@ All colors MUST be HSL.
    response finishes, so completed messages keep the normal chat font). */
 .bt-streaming,
 .bt-streaming * {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace !important;
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
 }
 
 .bt-streaming > :first-child {
@@ -163,35 +162,31 @@ All colors MUST be HSL.
   font-size: 0.72em;
   line-height: 1;
   vertical-align: 0.15em;
-  color: hsl(152 100% 62%);
-  text-shadow: 0 0 6px hsla(152 100% 60% / 0.9), 0 0 14px hsla(152 100% 60% / 0.4);
+  color: hsl(var(--foreground) / 0.55);
   animation: bt-terminal-tail 1.5s ease-in-out infinite;
 }
 
-/* AI Workspace + floating assistant: persistent SOC-terminal styling for AI
+/* AI Workspace + floating assistant: consistent foreground typography for AI
    responses. Applies BEFORE, DURING, and AFTER streaming (never removed), so a
-   completed answer keeps the monospace font, subtle matrix accent, and soft
-   glow. Softer than the live streaming accent so it stays readable for long
-   sessions. Only wrapped around AI message content — user messages are not
+   completed answer keeps the exact same font and color as it had while
+   streaming. Only wrapped around AI message content — user messages are not
    touched. */
 .bt-cyber-message,
 .bt-cyber-message * {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 .bt-cyber-message {
-  --tw-prose-body: hsl(152 100% 55%);
-  --tw-prose-headings: hsl(152 100% 64%);
-  --tw-prose-bold: hsl(152 100% 64%);
-  --tw-prose-emphasis: hsl(152 100% 52%);
-  --tw-prose-links: hsl(152 100% 58%);
-  --tw-prose-quotes: hsl(152 100% 56%);
-  --tw-prose-counters: hsl(152 100% 50%);
-  --tw-prose-bullets: hsl(152 100% 50%);
-  --tw-prose-hr: hsl(152 60% 38%);
-  --tw-prose-quote-borders: hsl(152 60% 38%);
-  text-shadow: 0 0 14px hsla(152 100% 60% / 0.3);
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-bold: hsl(var(--foreground));
+  --tw-prose-emphasis: hsl(var(--foreground));
+  --tw-prose-links: hsl(var(--foreground));
+  --tw-prose-quotes: hsl(var(--foreground));
+  --tw-prose-counters: hsl(var(--foreground));
+  --tw-prose-bullets: hsl(var(--foreground));
+  --tw-prose-hr: hsl(var(--border));
+  --tw-prose-quote-borders: hsl(var(--border));
 }
 
 /* Monospace typeface for the chat input (search/query bar) and user messages.
@@ -199,8 +194,7 @@ All colors MUST be HSL.
    tinted-bubble UI. */
 .bt-mono,
 .bt-mono * {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 /* Floating window user messages: restore the workspace user-bubble text color

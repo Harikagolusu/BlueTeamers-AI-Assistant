@@ -5,7 +5,6 @@ import { Crown, Sparkles, Shield } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Chat } from '@/components/ui/Chat';
 import { WorkspaceSidebar } from '@/components/ui/chat/WorkspaceSidebar';
-import HealthStatusIndicator from '@/components/soc/HealthStatusIndicator';
 import { useChat } from '@/hooks/useChat';
 import { useConversations } from '@/hooks/useConversations';
 import { useAiAssistant } from '@/context/AiAssistantContext';
@@ -24,12 +23,14 @@ const ChatPage = () => {
   const chatState = useChat();
   const { conversationId, isLoading } = chatState;
 
-  // Freemium: when the premium chat gate is enabled, free users see the
-  // upgrade page instead of the full workspace.
+  // Freemium: only guests (not logged in) are kept out of the full workspace —
+  // they get their free chats from the floating window. Logged-in users (even
+  // without a course purchase) can open the workspace and use their free chats;
+  // the backend enforces the message limit / premium upgrades.
   const { access } = useAiAssistant();
   const { isAuthenticated } = useAuth();
   const isGuest = !isAuthenticated;
-  const gated = !!access && access.enabled && !access.is_premium;
+  const gated = isGuest && !!access && access.enabled && !access.is_premium;
 
   // Track the previous conversation ID so we can detect *new* conversations.
   const prevConvIdRef = useRef<string | null>(null);
@@ -68,7 +69,9 @@ const ChatPage = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [sidebarOpen]);
 
-  // Free users (when the premium chat gate is on) land on the upgrade page.
+  // Guests (not logged in) see the sign-in prompt instead of the full workspace —
+  // they use their free chats from the floating window. After login the workspace
+  // opens and free chats apply until the user purchases a course.
   if (gated) {
     return (
       <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
@@ -81,16 +84,14 @@ const ChatPage = () => {
             <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 shadow-[0_0_30px_rgba(0,186,216,0.15)]">
               <Crown className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">The AI Workspace is a premium feature</h1>
+            <h1 className="text-2xl font-bold text-foreground">Login to unlock the AI Workspace</h1>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              {isGuest
-                ? "Login and join a BlueTeamers course to unlock the full AI Workspace — unlimited conversations with full page context, file analysis, and practice labs."
-                : "Upgrade to Premium to unlock the full AI Workspace — unlimited conversations with full page context, file analysis, and practice labs."}
+              Sign in to open the full-screen workspace — full page context, file analysis, and practice labs. Guests can chat from the floating window.
             </p>
             <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-left text-sm">
               <div className="flex items-center gap-3">
                 <Sparkles className="h-4 w-4 shrink-0 text-primary" />
-                <span>Unlimited AI conversations, always in context</span>
+                <span>Free chats included — no course purchase required to start</span>
               </div>
               <div className="flex items-center gap-3">
                 <Shield className="h-4 w-4 shrink-0 text-primary" />
@@ -98,21 +99,18 @@ const ChatPage = () => {
               </div>
               <div className="flex items-center gap-3">
                 <Crown className="h-4 w-4 shrink-0 text-primary" />
-                <span>Every course, lesson and practice lab</span>
+                <span>Upgrade to Premium for unlimited conversations</span>
               </div>
             </div>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button variant="ghost" onClick={() => navigate(isGuest ? '/courses' : '/dashboard')}>
-                {isGuest ? 'Browse Courses' : 'Maybe Later'}
+              <Button variant="ghost" onClick={() => navigate('/courses')}>
+                Browse Courses
               </Button>
-              <Button className="gap-2" onClick={() => navigate(isGuest ? '/auth' : '/courses')}>
+              <Button className="gap-2" onClick={() => navigate('/auth')}>
                 <Crown className="h-4 w-4" />
-                {isGuest ? 'Login / Create account' : 'Browse Courses'}
+                Login / Create account
               </Button>
             </div>
-            <p className="mt-6 text-[11px] text-muted-foreground">
-              Already premium? Try signing out and back in.
-            </p>
           </div>
         </main>
       </div>
@@ -145,11 +143,6 @@ const ChatPage = () => {
         <main className="absolute inset-0 flex flex-col bg-zinc-950/50">
           <Chat chatState={chatState} conversations={convState} />
         </main>
-
-        {/* Live AI Service health indicator (top-left of the workspace) */}
-        <div className="absolute top-3 left-3 z-20">
-          <HealthStatusIndicator />
-        </div>
       </div>
     </div>
   );

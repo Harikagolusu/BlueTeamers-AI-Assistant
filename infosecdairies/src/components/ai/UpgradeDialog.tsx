@@ -40,8 +40,8 @@ export const UpgradeDialog: React.FC<UpgradeDialogProps> = ({ variant }) => {
     : "The AI Workspace is a premium feature";
   const description = isGuest
     ? isLimit
-      ? "Free users get 5 AI messages per day. Login and join a BlueTeamers course to unlock unlimited AI messages and the full AI Workspace."
-      : "Login and join a BlueTeamers course to unlock the full AI Workspace with unlimited conversations, page-aware assistance, and advanced practice labs."
+      ? "Free users get 5 AI messages per day. Login to open the full AI Workspace and use your free chats."
+      : "Login to open the full AI Workspace with conversations, page-aware assistance, and practice labs."
     : isLimit
     ? "Free users get 5 AI messages per day. Join a BlueTeamers course to unlock unlimited AI messages and the full AI Workspace."
     : "Join a BlueTeamers course to unlock the full AI Workspace with unlimited conversations, page-aware assistance, and advanced practice labs.";

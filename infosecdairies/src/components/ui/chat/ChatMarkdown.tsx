@@ -62,21 +62,22 @@ const markdownComponents: Components = {
   ),
 };
 
-// Matrix-green accent applied (via prose CSS custom properties) ONLY while the
-// response is actively streaming. The wrapper is display:contents so it adds
-// no box and cannot disturb typography margins/layout, and the style is
-// dropped the moment streaming completes so completed messages stay untouched.
+// Streaming keeps the exact same typography colors as a completed response
+// (the .bt-cyber-message prose variables: foreground text, border rules) so
+// the AI answer looks identical while it streams and after it finishes. The
+// wrapper is display:contents so it adds no box and cannot disturb typography
+// margins/layout, and the style is dropped the moment streaming completes.
 const STREAMING_COLOR_VARS: Record<string, string> = {
-  "--tw-prose-body": "hsl(152 100% 55%)",
-  "--tw-prose-headings": "hsl(152 100% 64%)",
-  "--tw-prose-bold": "hsl(152 100% 64%)",
-  "--tw-prose-emphasis": "hsl(152 100% 52%)",
-  "--tw-prose-links": "hsl(152 100% 58%)",
-  "--tw-prose-quotes": "hsl(152 100% 56%)",
-  "--tw-prose-counters": "hsl(152 100% 50%)",
-  "--tw-prose-bullets": "hsl(152 100% 50%)",
-  "--tw-prose-hr": "hsl(152 60% 38%)",
-  "--tw-prose-quote-borders": "hsl(152 60% 38%)",
+  "--tw-prose-body": "hsl(var(--foreground))",
+  "--tw-prose-headings": "hsl(var(--foreground))",
+  "--tw-prose-bold": "hsl(var(--foreground))",
+  "--tw-prose-emphasis": "hsl(var(--foreground))",
+  "--tw-prose-links": "hsl(var(--foreground))",
+  "--tw-prose-quotes": "hsl(var(--foreground))",
+  "--tw-prose-counters": "hsl(var(--foreground))",
+  "--tw-prose-bullets": "hsl(var(--foreground))",
+  "--tw-prose-hr": "hsl(var(--border))",
+  "--tw-prose-quote-borders": "hsl(var(--border))",
 };
 
 interface ChatMarkdownProps {
@@ -97,12 +98,7 @@ export function ChatMarkdown({ children, isStreaming = false }: ChatMarkdownProp
   return (
     <div
       className="bt-streaming"
-      style={
-        {
-          ...STREAMING_COLOR_VARS,
-          textShadow: "0 0 14px hsla(152 100% 60% / 0.3)",
-        } as React.CSSProperties
-      }
+      style={STREAMING_COLOR_VARS as React.CSSProperties}
     >
       {markdown}
     </div>

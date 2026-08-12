@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   MessageSquarePlus,
-  UserCircle2,
   Search,
   Star,
   Trash2,
@@ -14,7 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAuth } from '@/context/AuthContext';
 import logo from '@/assets/logo.png';
 import type { useConversations } from '@/hooks/useConversations';
 
@@ -29,7 +27,6 @@ export interface WorkspaceSidebarProps {
 type FilterTab = 'recent' | 'favorites' | 'all';
 
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
-  { key: 'recent', label: 'Recent' },
   { key: 'favorites', label: 'Favorites' },
   { key: 'all', label: 'All' },
 ];
@@ -55,7 +52,6 @@ export const WorkspaceSidebar = ({
   conversations,
   onSelectConversation,
 }: WorkspaceSidebarProps) => {
-  const { user } = useAuth();
   const conv = conversations;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -148,7 +144,8 @@ export const WorkspaceSidebar = ({
                   value={conv.searchQuery}
                   onChange={(e) => conv.setSearchQuery(e.target.value)}
                   placeholder="Search conversations..."
-                  className="h-9 pl-9 text-xs bg-zinc-900/80 border-border/60"
+                  className="h-6 min-h-0 py-0 pl-9 text-[11px] bg-zinc-900/80 border-border/60"
+                  style={{ height: 24 }}
                 />
               </div>
             </div>
@@ -265,9 +262,6 @@ export const WorkspaceSidebar = ({
                                 {relativeTime(c.updated_at)}
                               </span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground line-clamp-1 pr-6">
-                              {c.last_message || c.topic || ''}
-                            </p>
 
                             {/* Row actions: rename, delete */}
                             <div
@@ -311,25 +305,8 @@ export const WorkspaceSidebar = ({
             </ScrollArea>
           )}
 
-          {/* Footer */}
-          <div className="mt-auto border-t border-border/50 z-10">
-            <div className="flex items-center gap-2.5 px-3 py-3">
-              <div className="w-8 h-8 rounded-full bg-zinc-800 border border-border flex items-center justify-center shrink-0">
-                <UserCircle2 className="w-5 h-5 text-primary" />
-              </div>
-              <div className="min-w-0 leading-tight flex-1">
-                <p className="text-xs font-medium text-foreground truncate">
-                  {user?.fullName || user?.email?.split('@')[0] || 'Guest'}
-                </p>
-                <p className="text-[10px] font-mono text-muted-foreground truncate">
-                  {user?.email || 'Not signed in'}
-                </p>
-              </div>
-              <span className="shrink-0 text-[9px] font-mono text-muted-foreground/60">
-                v1.0
-              </span>
-            </div>
-          </div>
+          {/* Footer removed: user details bar omitted from the AI workspace
+              sidebar for a cleaner, minimal layout. */}
         </div>
       </div>
     </>

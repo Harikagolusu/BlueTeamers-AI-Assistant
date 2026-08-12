@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { User, Trash2, Sparkles, Star } from 'lucide-react';
+import { User, Trash2, Star } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,7 +7,7 @@ import { ChatInput } from './chat/ChatInput';
 import { ChatMarkdown } from './chat/ChatMarkdown';
 import { EmptyStateDashboard } from './chat/EmptyStateDashboard';
 import { DashboardLoading } from './chat/DashboardLoading';
-import { ProfileCard, ProgressCard, EnrolledCoursesCard, RecommendationCard, CourseCard, SuggestedCourseCard } from './chat/PlatformCards';
+import { ProfileCard, ProgressCard, EnrolledCoursesCard, RecommendationCard, CourseCard } from './chat/PlatformCards';
 import { QuizCard, QuizOfferCard, QuizResultCard } from './chat/QuizCard';
 import { LabCard } from './chat/LabCard';
 import { consumeLogAnalysis } from '@/lib/logAnalysis';
@@ -289,23 +289,17 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
                         </div>
                       )}
 
-                      {/* Suggested BlueTeamers Courses: smart course recommendations
-                          based on the topic of the answer. Only rendered on a strong
-                          topic match (never after every response). */}
+                      {/* Suggested courses in plain text only (no cards). */}
                       {msg.role === 'assistant' && msg.metadata?.suggested_courses && msg.metadata.suggested_courses.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-border/50 not-prose">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Sparkles className="w-4 h-4 text-primary" />
-                            <h4 className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
-                              Suggested BlueTeamers Courses
-                            </h4>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {msg.metadata.suggested_courses.slice(0, 3).map((s: any, sIdx: number) => (
-                              <SuggestedCourseCard key={sIdx} suggestion={s} />
-                            ))}
-                          </div>
-                        </div>
+                        <p className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground leading-relaxed">
+                          <span className="font-mono text-muted-foreground/70 uppercase tracking-widest">Suggested: </span>
+                          {msg.metadata.suggested_courses.slice(0, 3).map((s: any, sIdx: number) => (
+                            <span key={sIdx}>
+                              {sIdx > 0 && ', '}
+                              <span className="text-foreground">{s.title}</span>
+                            </span>
+                          ))}
+                        </p>
                       )}
                     </div>
                   </div>

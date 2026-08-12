@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Shield, ShieldCheck, PanelLeft, UserCircle2, Menu, X } from "lucide-react";
+import { Shield, PanelLeft, UserCircle2, Menu, X } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -83,7 +83,9 @@ const Navbar = ({ variant = "default", onToggleSidebar }: NavbarProps) => {
               </Button>
             )}
 
-            {/* Logo (brand) */}
+            {/* Logo (brand) — hidden in the AI Workspace navbar so the clean
+                "AI Workspace" title reads on its own. */}
+            {!isFloating && (
             <Link
               to="/"
               onClick={closeMenu}
@@ -104,20 +106,14 @@ const Navbar = ({ variant = "default", onToggleSidebar }: NavbarProps) => {
                 />
               )}
             </Link>
+            )}
 
             {/* Workspace brand (AI Workspace page only) */}
             {isChatPage && (
               <div className="min-w-0 leading-tight">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-sm md:text-base text-foreground tracking-wide truncate">
-                    BlueTeamers <span className="gradient-text">AI Workspace</span>
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-mono font-medium shrink-0">BETA</span>
-                </div>
-                <div className="hidden sm:flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
-                  <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  <span>SECURE PIPE // DEEPSEEK-R1</span>
-                </div>
+                <span className="font-semibold text-sm md:text-base text-foreground tracking-wide truncate">
+                  BlueTeamers <span className="gradient-text">AI Workspace</span>
+                </span>
               </div>
             )}
           </div>
