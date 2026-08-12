@@ -24,10 +24,29 @@ class TestLanguageBlock:
         assert "Tinglish" in block
         assert "Telugu" in block
 
-    def test_removed_mixed_modes_return_no_block(self):
-        # hi+en and the other code-mixed combos were removed from the catalog.
-        assert build_language_block("hi+en") == ""
-        assert build_language_block("ta+en") == ""
+    def test_mixed_mode_enforces_natural_conversational_skeleton(self):
+        block = build_language_block("te+en")
+        # The reply must follow Telugu grammar/word order, not English with
+        # sprinkles of Telugu.
+        assert "natural conversational Tinglish" in block
+        assert "grammar and word order" in block
+        assert "NOT like an English answer" in block
+        # It must show the Telugu function words and keep tech terms in English.
+        assert "ante" in block
+        assert "cheyali" in block
+        assert "SIEM" in block
+
+    def test_all_language_mixed_modes_build_blocks(self):
+        for code in ["hi+en", "ta+en", "kn+en", "ml+en", "bn+en", "mr+en", "gu+en", "pa+en", "or+en", "ur+en"]:
+            block = build_language_block(code)
+            assert "[Response Language]" in block
+            assert "grammar and word order" in block
+            assert "casually types in English letters" in block
+
+    def test_mixed_modes_are_concrete(self):
+        assert is_concrete_code("te+en")
+        assert is_concrete_code("hi+en")
+        assert is_concrete_code("ta+en")
 
     def test_manual_source_is_unambiguous(self):
         block = build_language_block("ta", source="manual")

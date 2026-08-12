@@ -63,6 +63,13 @@ export function useChat(onNewConversation?: (id: string) => void) {
   useEffect(() => {
     languageRef.current = language;
   }, [language]);
+  // True only when the user actively changed the language via the selector in
+  // this session. A remembered preference auto-loaded into the dropdown must
+  // NOT be re-sent as an explicit request field: the backend treats an explicit
+  // code as a hard manual override and skips auto-detection (so e.g. a Tinglish
+  // query would be forced back into pure Telugu). Leaving it out lets the
+  // backend apply its own stored-preference + detection-override logic.
+  const languageToggledRef = useRef(false);
 
   // Load the authenticated user's remembered language preference once, unless
   // a local override already exists (local wins within this browser).
@@ -95,6 +102,7 @@ export function useChat(onNewConversation?: (id: string) => void) {
 
   const setLanguage = useCallback((code: string) => {
     setLanguageState(code);
+    languageToggledRef.current = true;
     try {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, code);
     } catch {
@@ -354,8 +362,11 @@ export function useChat(onNewConversation?: (id: string) => void) {
     if (files.length > 0) payload.files = files;
     if (labContext) payload.context = { ...payload.context, lab: labContext };
     if (pageContext) payload.context = { ...payload.context, page: pageContext };
-    // Manual language preference (Auto Detect is omitted -> backend detects).
-    if (languageRef.current && languageRef.current !== 'auto') {
+    // Explicit language override is sent ONLY when the user actively picked it
+    // this session. An auto-loaded remembered preference is intentionally left
+    // out — the backend applies its stored preference + auto-detection override
+    // there, so romanized queries still switch languages correctly.
+    if (languageToggledRef.current && languageRef.current && languageRef.current !== 'auto') {
       payload.language = languageRef.current;
     }
     // Guests (no JWT) are tracked by a persistent device id so they share the

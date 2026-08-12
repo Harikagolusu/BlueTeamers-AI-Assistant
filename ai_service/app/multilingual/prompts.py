@@ -28,6 +28,44 @@ _LANGUAGE_NAME = {
 
 _MIX_NAME = {
     "te+en": "Tinglish",
+    "hi+en": "Hinglish",
+    "ta+en": "Tanglish",
+    "kn+en": "Kanglish",
+    "ml+en": "Manglish",
+    "bn+en": "Banglish",
+    "mr+en": "Marathish",
+    "gu+en": "Gujarlish",
+    "pa+en": "Punglish",
+    "or+en": "Odia-English",
+    "ur+en": "Urlish",
+}
+
+# Natural romanized function words / connectives per base language, used to
+# teach the model the native conversational skeleton the reply must follow.
+_MIX_FUNCTION_WORDS = {
+    "te": "ante, enti, ela, enduku, kosam, nundi, tho, valla, cheyali, cheyochu, "
+          "untundi, avtundi, chudali, ardham chesukovali, okavela, appudu, "
+          "ippudu, inka, kuda, manam, naa",
+    "hi": "matlab, kya, kaise, kyun, ke liye, se, isliye, chahiye, sakte hain, "
+          "hai, hota hai, dekhte hain, phir, ab, bhi, hi, toh, hum",
+    "ta": "naan, enna, eppadi, yen, ku, la, irukku, mudiyum, pannanum, "
+          "pannalam, paakkalaam, appo, ippo, um, kooda, mattum",
+    "kn": "enu, hege, yake, gagi, inda, jote, alli, maadbodu, madabahudu, "
+          "ide, aagutte, noda, ardham maadkoloo, aaga, eega, kooda, matra",
+    "ml": "aa, enthu, enggane, enthinu, kaayi, il, oru, kond, cheyyanam, "
+          "cheyyaam, kaanam, ennu, appol, ippol, um, koode, mathram",
+    "bn": "matlab, ki, kivabe, keno, jonno, theke, sathe, hole, korte hobe, "
+          "kora jay, dekhte hobe, tahole, ekhon, o, abar, sudhu",
+    "mr": "matlab, kay, kase, kashala, sathi, madhe, sobat, kartat, karto, "
+          "karu shakto, pahila, mag, aata, pan, fakt",
+    "gu": "matlab, shu, kem, mate, thi, sathe, joie, karvu pade, kari shakay, "
+          "jovu, pachhi, have, pan, matra",
+    "pa": "matlab, ki, kive, kyon, layi, ton, naal, hona chahida, ho sakda, "
+          "dekho, phir, hun, vi, sirf",
+    "or": "matlab, ki, kivabe, kenh, paai, ru, sahit, karibaku, kariba, "
+          "dekhiba, achi, pare, bhi, kebal",
+    "ur": "matlab, kya, kaise, kyun, ke liye, se, ke saath, chahiye, sakte "
+          "hain, hai, dekhte hain, phir, ab, bhi, sirf",
 }
 
 _PURE_TEMPLATE = (
@@ -59,16 +97,20 @@ _MANUAL_PURE_TEMPLATE = (
 
 _MIXED_TEMPLATE = (
     "[Response Language]\n"
-    "- Write naturally in {language}, seamlessly switching into English where it "
-    "feels natural — a practical, friendly {mixin} (bilingual) style, like a SOC "
-    "analyst taking notes.\n"
-    "- Write the {language} portions in the {language} script and keep them "
-    "readable; mix in English words and phrases naturally.\n"
-    "- Always keep cybersecurity terminology and industry terms in English:\n"
+    "- Respond in natural conversational {mixin}: this is {language} spoken the way "
+    "a {language} person casually types in English letters (romanized). The reply "
+    "must sound like a {language} person chatting, NOT like an English answer with "
+    "a few {language} words inserted.\n"
+    "- Build every sentence on {language} grammar and word order. Use the natural "
+    "{language} function words and connectives: {funcs}\n"
+    "- Keep ONLY technical cybersecurity terminology and industry terms in "
+    "English:\n"
     "   {terms}\n"
-    "- Never mix or translate the content of commands, log/JSON/YAML extracts, "
-    "code blocks, file names, tool or product names, or raw data — reproduce them "
-    "exactly as-is in English.\n"
+    "- Never translate commands, log/JSON/YAML extracts, code blocks, file "
+    "names, tool or product names, or raw data — reproduce them exactly as-is "
+    "in English.\n"
+    "- Do not translate the {mixin} connective/grammar words into English and do "
+    "not write English sentences with {language} words sprinkled in.\n"
     "- Keep the same cybersecurity mentor persona, learner-level teaching depth, "
     "concise style, and Markdown formatting you normally use."
 )
@@ -76,16 +118,20 @@ _MIXED_TEMPLATE = (
 _MANUAL_MIXED_TEMPLATE = (
     "[Response Language]\n"
     "- The user explicitly chose {mixin} (bilingual {language} + English). Write "
-    "their reply in a natural {mixin} style: {language} in the {language} script, "
-    "mixing in English words and phrases where it feels natural — like a SOC "
-    "analyst taking notes.\n"
-    "- Do NOT switch completely to the language the user typed; keep this "
-    "{mixin} code-mixed style for the whole reply.\n"
-    "- Always keep cybersecurity terminology and industry terms in English:\n"
+    "their reply in natural conversational {mixin}: {language} spoken the way a "
+    "{language} person casually types in English letters (romanized). The reply "
+    "must sound like a {language} person chatting, NOT like an English answer "
+    "with a few {language} words inserted.\n"
+    "- Build every sentence on {language} grammar and word order. Use the natural "
+    "{language} function words and connectives: {funcs}\n"
+    "- Keep ONLY technical cybersecurity terminology and industry terms in "
+    "English:\n"
     "   {terms}\n"
-    "- Never mix or translate the content of commands, log/JSON/YAML extracts, "
-    "code blocks, file names, tool or product names, or raw data — reproduce them "
-    "exactly as-is in English.\n"
+    "- Never translate commands, log/JSON/YAML extracts, code blocks, file "
+    "names, tool or product names, or raw data — reproduce them exactly as-is "
+    "in English.\n"
+    "- Do not write English sentences with {language} words sprinkled in; keep "
+    "this {mixin} code-mixed style for the whole reply.\n"
     "- Keep the same cybersecurity mentor persona, learner-level teaching depth, "
     "concise style, and Markdown formatting you normally use."
 )
@@ -110,13 +156,15 @@ def build_language_block(code: str, source: Optional[str] = None) -> str:
         return ""
     terms = preserved_terms_text()
     if code in MIXED_LANGUAGE_CODES:
-        lang = _LANGUAGE_NAME.get(BASE_LANGUAGE_FOR_MIXED.get(code, code), language_label(code))
+        base = BASE_LANGUAGE_FOR_MIXED.get(code, code)
+        lang = _LANGUAGE_NAME.get(base, language_label(code))
+        funcs = _MIX_FUNCTION_WORDS.get(base, "")
         template = (
             _MANUAL_MIXED_TEMPLATE
             if source in (RESOLUTION_SOURCE_MANUAL, RESOLUTION_SOURCE_STORED)
             else _MIXED_TEMPLATE
         )
-        return template.format(language=lang, mixin=_MIX_NAME.get(code, "mixed"), terms=terms)
+        return template.format(language=lang, mixin=_MIX_NAME.get(code, "mixed"), funcs=funcs, terms=terms)
     lang = _LANGUAGE_NAME.get(code, language_label(code))
     if source in (RESOLUTION_SOURCE_MANUAL, RESOLUTION_SOURCE_STORED):
         return _MANUAL_PURE_TEMPLATE.format(language=lang, terms=terms)

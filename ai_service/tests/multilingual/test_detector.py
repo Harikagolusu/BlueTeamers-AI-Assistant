@@ -52,7 +52,20 @@ class TestRomanizedDetection:
     def test_teluglish(self, detector):
         code, conf = detector.detect("SIEM ante enti")
         assert code == "te+en"
-        assert conf == pytest.approx(0.65)
+        # Strong lexical match (score 6) -> high confidence so it overrides a
+        # stored preference in the stage.
+        assert conf >= 0.9
+
+    def test_natural_conversational_teluglish(self, detector):
+        # Real-world Tinglish queries must auto-detect as te+en.
+        for text in [
+            "siem ante enti?",
+            "wazuh ela work avtundi?",
+            "phishing ni ela identify cheyali?",
+            "hacker ante evaru",
+            "SIEM ante security operations center na?",
+        ]:
+            assert detector.detect(text)[0] == "te+en", text
 
     def test_removed_mixed_modes_fall_back_to_english(self, detector):
         # hi+en / ta+en / kn+en / ml+en lexicons were removed from the catalog.
@@ -60,6 +73,55 @@ class TestRomanizedDetection:
         assert detector.detect("Wazuh log pannunga")[0] == "en"
         assert detector.detect("Python yenu bekagide")[0] == "en"
         assert detector.detect("enthu vechitaangal")[0] == "en"
+
+
+class TestLanguageRequestDetection:
+    """Explicit "answer in <language>" requests (romanized + English)."""
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            # Romanized per-language request phrases -> romanized mixed mode.
+            ("telugu lo cheppava", "te+en"),
+            ("telugu lo cheppandi", "te+en"),
+            ("hindi me batao", "hi+en"),
+            ("hindi me bataiye", "hi+en"),
+            ("tamil la solunga", "ta+en"),
+            ("kannada dalli heli", "kn+en"),
+            ("marathi madhe sanga", "mr+en"),
+            ("bengali te bolo", "bn+en"),
+            ("gujarati ma keh", "gu+en"),
+            ("punjabi vich dasso", "pa+en"),
+            ("malayalam il parayu", "ml+en"),
+            ("urdu me batao", "ur+en"),
+            # English-language request phrases -> romanized mixed mode.
+            ("Explain in Telugu", "te+en"),
+            ("please answer in Hindi", "hi+en"),
+            ("in Tamil please", "ta+en"),
+            ("reply in kannada", "kn+en"),
+            ("tell me in malayalam", "ml+en"),
+            ("answer in English", "en"),
+        ],
+    )
+    def test_explicit_language_request(self, detector, text, expected):
+        code, conf = detector.detect(text)
+        assert code == expected
+        assert conf >= 0.9  # above SWITCH_THRESHOLD so it overrides stored pref
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "What does a firewall do?",
+            "SIEM kya hai bhai",
+            "I speak Telugu at home",
+            "learning Hindi is fun",
+            "Firewall rules for tamil",
+        ],
+    )
+    def test_plain_english_with_language_words_stays_english(self, detector, text):
+        code, _ = detector.detect(text)
+        assert code == "en"
+
 
 
 class TestEnglishFallback:

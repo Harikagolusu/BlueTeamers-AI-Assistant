@@ -84,12 +84,13 @@ class ChatService(IChatService):
         result = await self._orchestrator.execute_pipeline(context)
         
         # Resolved language (Sprint 7): the LanguageContextStage writes the
-        # effective response language into context.memory; expose it in the API
+        # effective response language into context.metadata (the metadata dict
+        # is shared across the immutable stage copies); expose it in the API
         # metadata so the frontend can show which language was used.
         language_meta = {
-            "language": context.memory.get("language"),
-            "language_label": context.memory.get("language_label"),
-            "language_source": context.memory.get("language_source"),
+            "language": context.metadata.get("language"),
+            "language_label": context.metadata.get("language_label"),
+            "language_source": context.metadata.get("language_source"),
         }
         language_meta = {k: v for k, v in language_meta.items() if v}
         

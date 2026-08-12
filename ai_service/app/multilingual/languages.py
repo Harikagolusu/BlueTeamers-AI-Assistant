@@ -31,8 +31,18 @@ class LanguageMode(str, Enum):
     URDU = "ur"
     ASSAMESE = "as"
 
-    # Bilingual code-mixed mode (Telugu + English)
+    # Bilingual code-mixed modes (romanized <language> + English)
     TELUGLISH = "te+en"
+    HINGLISH = "hi+en"
+    TANGLISH = "ta+en"
+    KANGLISH = "kn+en"
+    MANGLISH = "ml+en"
+    BANGLISH = "bn+en"
+    MARATHISH = "mr+en"
+    GUJARLISH = "gu+en"
+    PUNGLISH = "pa+en"
+    ODIAISH = "or+en"
+    URDISH = "ur+en"
 
     @classmethod
     def auto_code(cls) -> str:
@@ -63,6 +73,16 @@ LANGUAGE_META: Dict[str, Dict[str, str]] = {
     "ur": {"name": "Urdu", "native": "اردو", "script": "Perso-Arabic"},
     "as": {"name": "Assamese", "native": "অসমীয়া", "script": "Bengali"},
     "te+en": {"name": "Tinglish", "native": "తెలుగు + English", "script": "Telugu"},
+    "hi+en": {"name": "Hinglish", "native": "हिन्दी + English", "script": "Devanagari"},
+    "ta+en": {"name": "Tanglish", "native": "தமிழ் + English", "script": "Tamil"},
+    "kn+en": {"name": "Kanglish", "native": "ಕನ್ನಡ + English", "script": "Kannada"},
+    "ml+en": {"name": "Manglish", "native": "മലയാളം + English", "script": "Malayalam"},
+    "bn+en": {"name": "Banglish", "native": "বাংলা + English", "script": "Bengali"},
+    "mr+en": {"name": "Marathish", "native": "मराठी + English", "script": "Devanagari"},
+    "gu+en": {"name": "Gujarlish", "native": "ગુજરાતી + English", "script": "Gujarati"},
+    "pa+en": {"name": "Punglish", "native": "ਪੰਜਾਬੀ + English", "script": "Gurmukhi"},
+    "or+en": {"name": "Odia-English", "native": "ଓଡ଼ିଆ + English", "script": "Odia"},
+    "ur+en": {"name": "Urlish", "native": "اردو + English", "script": "Perso-Arabic"},
 }
 
 # Codes that represent a concrete response language (excludes "auto").
@@ -120,8 +140,9 @@ def display_label(code: str) -> str:
 def catalog_options() -> Generator[Tuple[str, str], None, None]:
     """Yield (code, display_label) pairs ordered for the UI selector."""
     order = [
-        "auto", "en", "te", "te+en", "hi", "ta",
-        "kn", "ml", "mr", "bn", "gu", "pa", "or",
+        "auto", "en", "te", "te+en", "hi", "hi+en", "ta", "ta+en",
+        "kn", "kn+en", "ml", "ml+en", "mr", "mr+en", "bn", "bn+en",
+        "gu", "gu+en", "pa", "pa+en", "or", "or+en", "ur", "ur+en",
     ]
     for code in order:
         if code in LANGUAGE_META:

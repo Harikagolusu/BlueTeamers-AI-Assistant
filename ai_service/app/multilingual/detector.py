@@ -6,11 +6,16 @@ Two-pass detection, deliberately dependency-free and fast:
    and returns the matching native-script mode (confidence ~0.95). Devanagari
    is disambiguated between Hindi and Marathi with a Marathi function-word
    lexicon.
-2. **Romanized pass** — for Latin-script text, matches lightweight romanized
+2. **Language-request pass** — for Latin-script text, matches explicit
+   requests to answer in a specific language — English ("explain in Telugu",
+   "in Hindi please") or romanized ("telugu lo cheppava", "hindi me batao") —
+   and returns the matching native-script mode (confidence ~0.95, above the
+   stored-preference switch threshold).
+3. **Romanized pass** — for Latin-script text, matches lightweight romanized
    word lexicons for Telugu and returns the Tinglish bilingual code-mixed mode (
    ``te+en``) so a query like "SIEM ante enti?" is answered in Tinglish
    (confidence ~0.65).
-3. **Fallback** — anything else is English.
+4. **Fallback** — anything else is English.
 
 The detector is a pure, synchronous, dependency-free heuristic. It never
 touches IO and is safe to call on every request.
@@ -82,8 +87,69 @@ _ROMANIZED: Dict[str, Tuple[str, Dict[str, int]]] = {
         "enduku": 2, "yendi": 2, "tappu": 2, "bagundi": 2, "ippudu": 2,
         "appudu": 2, "inko": 2, "emanna": 2, "oka": 1, "chala": 2, "baaga": 2,
         "ra": 2, "rando": 2, "raa": 2, "sare": 2, "thamanam": 1, "endi": 2,
+        # Natural conversational Telugu (romanized) — user-friendly Tinglish
+        # queries like "wazuh ela work avtundi?" or "phishing ni ela cheyali?".
+        "avtundi": 2, "avutundi": 2, "untadi": 2, "cheyali": 2, "cheyochu": 2,
+        "chudali": 2, "kosam": 2, "nundi": 2, "valla": 2, "manam": 2,
+        "ardham": 2, "em": 1, "kuda": 1, "tho": 1, "vasthundi": 2,
+        "raavali": 2, "kavaliante": 2, "elaanti": 2, "eppudu": 2, "eppati": 2,
+        "gurinchi": 2, "chepthava": 2, "chepthara": 2, "chepthe": 2,
     }),
 }
+
+# --------------------------------------------------------------------------
+# Explicit language-request detection (Latin-script text)
+# --------------------------------------------------------------------------
+# Language name (romanized/English alias) -> native-script mode code.
+_LANGUAGE_NAMES: Dict[str, str] = {
+    "telugu": "te",
+    "hindi": "hi",
+    "tamil": "ta",
+    "tamizh": "ta",
+    "kannada": "kn",
+    "malayalam": "ml",
+    "bengali": "bn",
+    "bangla": "bn",
+    "marathi": "mr",
+    "gujarati": "gu",
+    "punjabi": "pa",
+    "odia": "or",
+    "oriya": "or",
+    "urdu": "ur",
+    "english": "en",
+}
+
+# Words that signal the user explicitly wants a reply in that language:
+# English request verbs / prepositions + romanized request words from each
+# Indian language ("lo cheppandi", "me batao", "la solunga", "dalli heli" ...).
+_REQUEST_MARKERS = {
+    # English
+    "in", "please", "explain", "answer", "reply", "respond", "tell",
+    "translate", "write",
+    # Telugu
+    "lo", "cheppu", "cheppandi", "cheppava", "cheppavaa", "entha", "nuvvu",
+    # Hindi / Urdu
+    "me", "mein", "batao", "bataiye", "kaho", "bolo", "bol",
+    # Tamil
+    "la", "il", "solunga", "sollunga", "sollu",
+    # Kannada
+    "dalli", "alli", "heli", "helli", "heelli",
+    # Malayalam
+    "parayu", "parayoo", "paranj",
+    # Marathi
+    "madhe", "sanga", "bolava",
+    # Bengali
+    "bolo", "bol", "lekh",
+    # Gujarati
+    "ma", "keh", "keho",
+    # Punjabi
+    "vich", "dasso", "dass",
+    # Odia
+    "re", "kuhu", "kahile",
+}
+
+# Max token distance between a language name and a request marker.
+_REQUEST_WINDOW = 5
 
 
 def _char_script(char: str) -> str | None:
@@ -142,11 +208,22 @@ class LanguageDetector:
                 confidence = min(0.99, 0.7 + 0.25 * ratio)
                 return code, confidence
 
-        # ---- Pass 2: romanized (Latin script) --------------------------
+        # ---- Pass 2: explicit language request (Latin script) ------------
         if self._is_latin(stripped):
+            req_code = self._match_language_request(stripped)
+            if req_code:
+                # Romanized request -> bilingual mixed mode (e.g. "telugu lo
+                # cheppava" -> te+en) so the reply mirrors the user's style.
+                return self._as_mixed(req_code), 0.95
+
             roman_code, score = self._match_romanized(stripped)
             if roman_code:
-                return roman_code, 0.65
+                # Confidence scales with lexical match strength so a clear
+                # Tinglish query (score >= 4) overrides a stored preference in
+                # the stage (>= SWITCH_THRESHOLD 0.9), while a weak match
+                # (e.g. a single "ante") stays below it.
+                confidence = min(0.95, 0.5 + 0.1 * score)
+                return roman_code, confidence
 
         # ---- Pass 3: fallback ------------------------------------------
         return "en", 0.9
@@ -183,3 +260,47 @@ class LanguageDetector:
         if best_score >= 3:
             return best_code, best_score
         return None, 0
+
+    @staticmethod
+    def _as_mixed(code: str) -> str:
+        """Convert a native code to its romanized bilingual mode (te -> te+en)."""
+        if code == "en":
+            return "en"
+        return f"{code}+en"
+
+    @staticmethod
+    def _match_language_request(text: str) -> str | None:
+        """Return the code for an explicit "answer in <language>" request.
+
+        Looks for a language name near a request marker. Both directions are
+        supported ("explain in Telugu", "telugu lo cheppandi", "in Hindi
+        please"). Returns ``None`` when no confident request is present so the
+        callers can fall back to the romanized lexicon / English.
+        """
+        tokens = [t.lower() for t in _WORD_RE.findall(text)]
+        if not tokens:
+            return None
+
+        # Language-name token indices.
+        name_idx = [i for i, t in enumerate(tokens) if t in _LANGUAGE_NAMES]
+        if not name_idx:
+            return None
+
+        # Marker token indices.
+        marker_idx = [i for i, t in enumerate(tokens) if t in _REQUEST_MARKERS]
+        if not marker_idx:
+            return None
+
+        # Pick the language whose name is closest to a marker; if that pair is
+        # out of window we do not treat it as a request.
+        best_name, best_dist = None, None
+        for ni in name_idx:
+            name = tokens[ni]
+            for mi in marker_idx:
+                dist = abs(ni - mi)
+                if dist <= _REQUEST_WINDOW and (best_dist is None or dist < best_dist):
+                    best_name, best_dist = name, dist
+
+        if best_name is None:
+            return None
+        return _LANGUAGE_NAMES[best_name]
