@@ -67,6 +67,30 @@ class TestRomanizedDetection:
         ]:
             assert detector.detect(text)[0] == "te+en", text
 
+    def test_low_score_teluglish_still_overrides_stored_preference(self, detector):
+        # Queries with only a 3-point lexical match (score 3) are still clearly
+        # Tinglish and must reach SWITCH_THRESHOLD (0.9) so a stored preference
+        # never forces the wrong language (e.g. pure Telugu for a romanized
+        # query like "soc course about emiti").
+        for text in [
+            "soc oka example kavali",
+            "soc course about emiti",
+            "soc ante",
+        ]:
+            code, conf = detector.detect(text)
+            assert code == "te+en", text
+            assert conf >= 0.9, (text, conf)
+
+    def test_missing_conversational_words_detected(self, detector):
+        # Regression: these romanized words were absent from the lexicon, so
+        # natural Tinglish questions fell back to English.
+        for text in [
+            "log analysis ela chestaru",
+            "siem ante emiti",
+            "windows logs ela chudandi",
+        ]:
+            assert detector.detect(text)[0] == "te+en", text
+
     def test_removed_mixed_modes_fall_back_to_english(self, detector):
         # hi+en / ta+en / kn+en / ml+en lexicons were removed from the catalog.
         assert detector.detect("SIEM kya hai bhai")[0] == "en"

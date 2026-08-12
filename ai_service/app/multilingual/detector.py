@@ -94,6 +94,14 @@ _ROMANIZED: Dict[str, Tuple[str, Dict[str, int]]] = {
         "ardham": 2, "em": 1, "kuda": 1, "tho": 1, "vasthundi": 2,
         "raavali": 2, "kavaliante": 2, "elaanti": 2, "eppudu": 2, "eppati": 2,
         "gurinchi": 2, "chepthava": 2, "chepthara": 2, "chepthe": 2,
+        # Common conversational words that were previously missed, causing a
+        # Tinglish query to fall below SWITCH_THRESHOLD and be overridden by a
+        # stored preference (e.g. "siem ante emiti", "hacker ante evaru",
+        # "log analysis ela chestaru").
+        "emiti": 3, "evaru": 3, "evadiki": 2, "evadi": 2, "chestaru": 3,
+        "chestunnaru": 3, "cheyyali": 2, "cheyadam": 2, "unnayi": 2,
+        "untayi": 2, "cheptanu": 2, "cheptaa": 2, "teliyadu": 2, "chudandi": 2,
+        "chudam": 2, "evad": 2,
     }),
 }
 
@@ -219,10 +227,11 @@ class LanguageDetector:
             roman_code, score = self._match_romanized(stripped)
             if roman_code:
                 # Confidence scales with lexical match strength so a clear
-                # Tinglish query (score >= 4) overrides a stored preference in
-                # the stage (>= SWITCH_THRESHOLD 0.9), while a weak match
-                # (e.g. a single "ante") stays below it.
-                confidence = min(0.95, 0.5 + 0.1 * score)
+                # Tinglish query overrides a stored preference in the stage
+                # (>= SWITCH_THRESHOLD 0.9). A score-3 match (e.g. "SOC oka
+                # example kavali") must already reach 0.9, otherwise a stored
+                # preference would wrongly win over an obvious romanized query.
+                confidence = min(0.95, 0.6 + 0.1 * score)
                 return roman_code, confidence
 
         # ---- Pass 3: fallback ------------------------------------------
