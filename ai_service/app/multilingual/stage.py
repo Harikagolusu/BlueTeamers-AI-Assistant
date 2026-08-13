@@ -106,23 +106,16 @@ class LanguageContextStage:
         """Return (code, resolution_source) for the request.
 
         Order of precedence:
-          1. Explicit concrete language in the request (manual selection) — unless
-             the query is *clearly* in a different language (confidence >=
-             SWITCH_THRESHOLD), in which case the detected language wins. This
-             keeps auto-detection authoritative: a user who types "siem ante
-             emiti" while the selector is pinned to Telugu still gets a Tinglish
-             answer instead of pure Telugu.
-          2. Stored concrete preference (remembered language) — unless the user
-             clearly typed in a different script this message (Feature 1),
-             in which case the detected language wins and is remembered instead.
+          1. Explicit concrete language in the request (manual selection) — the
+             user actively picked a language, so their choice always wins. The
+             reply is written in that language regardless of the query language
+             (this is the documented, predictable behaviour of a manual
+             override).
+          2. Stored concrete preference (remembered language) — a previously
+             chosen language is honored until the user changes it.
           3. Auto-detect from the query; the result is remembered for the user.
         """
         if explicit and is_concrete_code(explicit):
-            detected_code, confidence = self._detector.detect(query)
-            if confidence >= SWITCH_THRESHOLD and detected_code != explicit:
-                if pref_key:
-                    await self._safe_set(pref_key, detected_code)
-                return detected_code, RESOLUTION_SOURCE_DETECTED
             code = explicit
             source = RESOLUTION_SOURCE_MANUAL
             if pref_key and stored != code:
@@ -132,11 +125,6 @@ class LanguageContextStage:
         detected_code, confidence = self._detector.detect(query)
 
         if stored and is_concrete_code(stored):
-            if confidence >= SWITCH_THRESHOLD and detected_code != stored:
-                # e.g. the user switched from English to Telugu script.
-                if pref_key:
-                    await self._safe_set(pref_key, detected_code)
-                return detected_code, RESOLUTION_SOURCE_DETECTED
             return stored, RESOLUTION_SOURCE_STORED
 
         # Auto / no stored preference -> remember the detection (Feature 6).
