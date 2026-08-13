@@ -1,0 +1,20 @@
+﻿// Content served server-side via Django backend API.
+import type { LessonContent } from "../../lessonContent";
+export const module1: LessonContent[] = [];
+export const module2: LessonContent[] = [];
+export const module3: LessonContent[] = [];
+export const module4: LessonContent[] = [];
+export const module5: LessonContent[] = [];
+export const module6: LessonContent[] = [];
+export const module7: LessonContent[] = [];
+export const module8: LessonContent[] = [];
+export const module9: LessonContent[] = [];
+export const module10: LessonContent[] = [];
+export const quiz2: LessonContent[] = [];
+export const quiz3: LessonContent[] = [];
+export const quiz4: LessonContent[] = [];
+export const quiz4_6: LessonContent[] = [];
+export const quiz6_5: LessonContent[] = [];
+export const quiz8_5: LessonContent[] = [];
+export const finalExam: LessonContent[] = [];
+export const finalQuiz: LessonContent[] = [];
