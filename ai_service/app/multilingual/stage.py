@@ -111,8 +111,12 @@ class LanguageContextStage:
              reply is written in that language regardless of the query language
              (this is the documented, predictable behaviour of a manual
              override).
-          2. Stored concrete preference (remembered language) — a previously
-             chosen language is honored until the user changes it.
+          2. Stored concrete preference (remembered language) — honored, unless
+             the query this message is *clearly* in a different language
+             (confidence >= SWITCH_THRESHOLD), in which case the detected
+             language wins and is remembered instead. This keeps auto mode
+             switching correctly (e.g. greeting "hi" while Telugu was last
+             used still returns English).
           3. Auto-detect from the query; the result is remembered for the user.
         """
         if explicit and is_concrete_code(explicit):
@@ -125,6 +129,11 @@ class LanguageContextStage:
         detected_code, confidence = self._detector.detect(query)
 
         if stored and is_concrete_code(stored):
+            if confidence >= SWITCH_THRESHOLD and detected_code != stored:
+                # e.g. the user was on Telugu but this message is clearly English.
+                if pref_key:
+                    await self._safe_set(pref_key, detected_code)
+                return detected_code, RESOLUTION_SOURCE_DETECTED
             return stored, RESOLUTION_SOURCE_STORED
 
         # Auto / no stored preference -> remember the detection (Feature 6).
