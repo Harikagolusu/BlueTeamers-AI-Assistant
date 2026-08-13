@@ -44,6 +44,25 @@ function relativeTime(iso: string): string {
   return new Date(then).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+// Timeline grouping for the history list: Today, Yesterday, Last 7 Days,
+// Older. Items loaded via "Load more" fall into the correct group too.
+function timelineGroup(iso: string): string {
+  const then = new Date(iso);
+  if (isNaN(then.getTime())) return 'Older';
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday);
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+  const startOfLast7 = new Date(startOfToday);
+  startOfLast7.setDate(startOfLast7.getDate() - 6);
+  if (then >= startOfToday) return 'Today';
+  if (then >= startOfYesterday) return 'Yesterday';
+  if (then >= startOfLast7) return 'Last 7 Days';
+  return 'Older';
+}
+
+const TIMELINE_ORDER = ['Today', 'Yesterday', 'Last 7 Days', 'Older'];
+
 export const WorkspaceSidebar = ({
   open = false,
   onClose,
@@ -192,88 +211,103 @@ export const WorkspaceSidebar = ({
                 </div>
               ) : (
                 <div className="flex flex-col gap-1">
-                  {conv.conversations.map((c) => {
-                    const active = conv.activeId === c.conversation_id;
-                    const isEditing = editingId === c.conversation_id;
-                    return (
-                      <div
-                        key={c.conversation_id}
-                        onClick={() => handleSelect(c.conversation_id)}
-                        className={`group relative flex flex-col gap-0.5 rounded-lg px-3 py-2.5 cursor-pointer border transition-colors ${
-                          active
-                            ? 'bg-primary/10 border-primary/30'
-                            : 'border-transparent hover:bg-zinc-900/80'
-                        }`}
-                      >
-                        {isEditing ? (
-                          <div
-                            className="flex items-center gap-1.5"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Input
-                              autoFocus
-                              value={editTitle}
-                              onChange={(e) => setEditTitle(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') commitRename(c.conversation_id);
-                                if (e.key === 'Escape') setEditingId(null);
-                              }}
-                              className="h-7 text-xs bg-zinc-900/90 border-border/60"
-                            />
-                            <button
-                              onClick={() => commitRename(c.conversation_id)}
-                              className="text-primary hover:text-primary/80"
-                              aria-label="Save title"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="text-muted-foreground hover:text-foreground"
-                              aria-label="Cancel rename"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-start gap-2 min-w-0">
-                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                <span className="text-xs font-medium text-foreground truncate">
-                                  {c.title || 'Untitled'}
-                                </span>
-                              </div>
-                              <span className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground shrink-0">
-                                <Clock className="w-3 h-3" />
-                                {relativeTime(c.updated_at)}
-                              </span>
-                            </div>
-
-                            {/* Row actions: rename, delete */}
+                  {(() => {
+                    const groups = TIMELINE_ORDER
+                      .map((label) => ({
+                        label,
+                        items: conv.conversations.filter((c) => timelineGroup(c.updated_at) === label),
+                      }))
+                      .filter((g) => g.items.length > 0);
+                    return groups.map((group) => (
+                      <div key={group.label} className="flex flex-col gap-1 mb-2">
+                        <div className="px-3 pt-2 pb-1 text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70">
+                          {group.label}
+                        </div>
+                        {group.items.map((c) => {
+                          const active = conv.activeId === c.conversation_id;
+                          const isEditing = editingId === c.conversation_id;
+                          return (
                             <div
-                              className="absolute right-1.5 top-1.5 hidden group-hover:flex items-center gap-0.5 bg-zinc-950/90 rounded-md border border-border/60 p-0.5"
-                              onClick={(e) => e.stopPropagation()}
+                              key={c.conversation_id}
+                              onClick={() => handleSelect(c.conversation_id)}
+                              className={`group relative flex flex-col gap-0.5 rounded-lg px-3 py-2.5 cursor-pointer border transition-colors ${
+                                active
+                                  ? 'bg-primary/10 border-primary/30'
+                                  : 'border-transparent hover:bg-zinc-900/80'
+                              }`}
                             >
-                              <button
-                                onClick={() => startRename(c.conversation_id, c.title)}
-                                className="p-1 rounded hover:bg-zinc-800 text-muted-foreground"
-                                aria-label="Rename"
-                              >
-                                <PenLine className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => confirmDelete(c.conversation_id, c.title)}
-                                className="p-1 rounded hover:bg-zinc-800 text-muted-foreground hover:text-red-400"
-                                aria-label="Delete"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                              {isEditing ? (
+                                <div
+                                  className="flex items-center gap-1.5"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Input
+                                    autoFocus
+                                    value={editTitle}
+                                    onChange={(e) => setEditTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') commitRename(c.conversation_id);
+                                      if (e.key === 'Escape') setEditingId(null);
+                                    }}
+                                    className="h-7 text-xs bg-zinc-900/90 border-border/60"
+                                  />
+                                  <button
+                                    onClick={() => commitRename(c.conversation_id)}
+                                    className="text-primary hover:text-primary/80"
+                                    aria-label="Save title"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingId(null)}
+                                    className="text-muted-foreground hover:text-foreground"
+                                    aria-label="Cancel rename"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex items-start gap-2 min-w-0">
+                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                      <span className="text-xs font-medium text-foreground truncate">
+                                        {c.title || 'Untitled'}
+                                      </span>
+                                    </div>
+                                    <span className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground shrink-0">
+                                      <Clock className="w-3 h-3" />
+                                      {relativeTime(c.updated_at)}
+                                    </span>
+                                  </div>
+
+                                  {/* Row actions: rename, delete */}
+                                  <div
+                                    className="absolute right-1.5 top-1.5 hidden group-hover:flex items-center gap-0.5 bg-zinc-950/90 rounded-md border border-border/60 p-0.5"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <button
+                                      onClick={() => startRename(c.conversation_id, c.title)}
+                                      className="p-1 rounded hover:bg-zinc-800 text-muted-foreground"
+                                      aria-label="Rename"
+                                    >
+                                      <PenLine className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => confirmDelete(c.conversation_id, c.title)}
+                                      className="p-1 rounded hover:bg-zinc-800 text-muted-foreground hover:text-red-400"
+                                      aria-label="Delete"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
-                          </>
-                        )}
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    ));
+                  })()}
 
                   {conv.hasMore && (
                     <Button
