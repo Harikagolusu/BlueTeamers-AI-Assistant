@@ -1,4 +1,7 @@
 #!/bin/bash
 # Start Django Backend on port 8000
-cd /home/harika/BlueTeamers-AI-Assistant/infosecdairies/infosec-backend/backend
-python manage.py runserver 0.0.0.0:8000 --noreload >> /home/harika/BlueTeamers-AI-Assistant/logs/django_8000.log 2>&1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR" && pwd)"
+mkdir -p "$ROOT_DIR/logs"
+cd "$ROOT_DIR/infosecdairies/infosec-backend/backend"
+exec python manage.py runserver 0.0.0.0:8000 --noreload >> "$ROOT_DIR/logs/django_8000.log" 2>&1
