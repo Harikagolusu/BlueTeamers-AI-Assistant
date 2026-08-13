@@ -439,8 +439,8 @@ export const FloatingAssistant: React.FC = () => {
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              onClick={() => navigate("/chat")}
-              title="Open in full workspace"
+              onClick={() => window.open("/chat", "_blank", "noopener,noreferrer")}
+              title="Open in full workspace (new tab)"
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </Button>
