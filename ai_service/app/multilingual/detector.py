@@ -102,6 +102,13 @@ _ROMANIZED: Dict[str, Tuple[str, Dict[str, int]]] = {
         "chestunnaru": 3, "cheyyali": 2, "cheyadam": 2, "unnayi": 2,
         "untayi": 2, "cheptanu": 2, "cheptaa": 2, "teliyadu": 2, "chudandi": 2,
         "chudam": 2, "evad": 2,
+        # Casual Tenglish requests like "easy gaa cheppava" / "cheppandi easy
+        # ga" — previously these fell through detection as English.
+        "gaa": 2, "ga": 1, "cheppava": 3, "cheppavaa": 3, "cheppara": 3,
+        "chepthavaa": 3, "cheppamante": 2, "chepthaga": 2, "thaamane": 2,
+        "echi": 2, "panikostundi": 2, "baguntundi": 2, "avate": 2, "kadu": 2,
+        "idi": 2, "adi": 2, "ivanni": 2, "aavi": 2, "cheyagalava": 3,
+        "cheyachu": 2, "cheppagalava": 3, "arpudu": 2, "easyga": 3,
     }),
 }
 
