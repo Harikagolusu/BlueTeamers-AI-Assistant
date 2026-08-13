@@ -14,6 +14,25 @@ export function apiUrl(path: string) {
   return `${API_BASE}${path}`;
 }
 
+/**
+ * Fold a visitor's pre-login guest allowance into their newly-authenticated
+ * account. The AI backend honours the JWT identity but also reads the carried
+ * `client_id` and merges the guest's used count, so logging in never grants a
+ * fresh daily quota. Best-effort: a failure must not block login.
+ */
+export async function carryOverGuestAiAllowance(clientId: string): Promise<void> {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken || !clientId) return;
+    await fetch(
+      apiUrl(`/api/chat/access?client_id=${encodeURIComponent(clientId)}`),
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+  } catch {
+    // Best-effort carryover — ignore failures.
+  }
+}
+
 export async function fetchCourses() {
   const res = await fetch(apiUrl(`/api/courses/`));
   if (!res.ok) {

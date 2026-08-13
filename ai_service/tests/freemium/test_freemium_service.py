@@ -105,3 +105,27 @@ async def test_configurable_limit(store, monkeypatch):
     monkeypatch.setattr(service_module.settings, "FREEMIUM_FREE_MESSAGE_LIMIT", 3)
     status = await service.get_access_status("user-1", "token")
     assert status.limit == 3
+
+
+@pytest.mark.asyncio
+async def test_guest_usage_carried_over_on_login(store):
+    """A guest who used messages should not get a fresh allowance after login:
+    their used count is folded into the authenticated user's quota."""
+    service = _service(store, purchases=[])
+    for _ in range(3):
+        await store.increment("guest:device-abc")
+
+    status = await service.get_access_status("user-1", "token", client_id="device-abc")
+    assert status.access_level == AccessLevel.FREE
+    assert status.used == 3
+    assert status.remaining == 2
+
+
+@pytest.mark.asyncio
+async def test_guest_usage_carried_over_blocks_at_limit(store):
+    service = _service(store, purchases=[])
+    for _ in range(5):
+        await store.increment("guest:device-abc")
+
+    with pytest.raises(FreemiumLimitExceeded):
+        await service.check_and_consume("user-1", "token", client_id="device-abc")

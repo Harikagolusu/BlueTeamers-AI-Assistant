@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { apiUrl } from "@/services/api";
+import { apiUrl, carryOverGuestAiAllowance } from "@/services/api";
 import { verifyJwtLocally } from "@/lib/jwtVerify";
+import { clearGuestId, getGuestId } from "@/lib/guestId";
 
 interface AuthUser {
   email: string;
@@ -252,6 +253,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       localStorage.removeItem("userFullName");
     }
+
+    // A visitor who logged in should not get a fresh daily AI allowance: carry
+    // their pre-login guest usage into the authenticated account, then drop the
+    // device guest id so it isn't reused for the same quota.
+    const guestId = getGuestId();
+    if (guestId) {
+      void carryOverGuestAiAllowance(guestId).finally(clearGuestId);
+    } else {
+      clearGuestId();
+    }
+
     setUser({ email, fullName });
   };
 

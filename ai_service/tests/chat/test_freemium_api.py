@@ -165,3 +165,47 @@ def test_distinct_guests_have_independent_limits(free_client, resolve_user):
         ).status_code
         == 200
     )
+
+
+def test_logged_in_user_with_client_id_carries_guest_usage(tmp_path, resolve_user):
+    client, _ = _make_app(tmp_path, purchases=[])
+    # Guest burns 3 of their 5 daily messages.
+    for i in range(3):
+        res = client.post(
+            "/api/v1/chat/",
+            json={"message": f"g{i}", "stream": False, "client_id": "device-xyz"},
+        )
+        assert res.status_code == 200, res.text
+
+    # The same device then logs in (JWT) while still sending its client_id.
+    headers = {"Authorization": f"Bearer {_token_payload()}"}
+    res = client.get(
+        "/api/v1/chat/access",
+        params={"client_id": "device-xyz"},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["access_level"] == "free"
+    assert data["used"] == 3
+    assert data["remaining"] == 2
+
+    # Only the remaining 2 messages fit; the 6th total (3rd after login) is blocked.
+    res = client.post(
+        "/api/v1/chat/",
+        json={"message": "post-login", "stream": False, "client_id": "device-xyz"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    res = client.post(
+        "/api/v1/chat/",
+        json={"message": "post-login-2", "stream": False, "client_id": "device-xyz"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    res = client.post(
+        "/api/v1/chat/",
+        json={"message": "over-limit", "stream": False, "client_id": "device-xyz"},
+        headers=headers,
+    )
+    assert res.status_code == 429

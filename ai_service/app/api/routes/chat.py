@@ -86,7 +86,7 @@ async def chat_access_endpoint(
     indicator and the /chat workspace gate.
     """
     identity, token = _resolve_identity(raw_token, client_id)
-    status = await freemium_service.get_access_status(identity, token)
+    status = await freemium_service.get_access_status(identity, token, client_id=client_id)
     return status
 
 
@@ -116,7 +116,7 @@ async def chat_endpoint(
 
     identity, token = _resolve_identity(raw_token, request.client_id)
     try:
-        await freemium_service.check_and_consume(identity, token)
+        await freemium_service.check_and_consume(identity, token, client_id=request.client_id)
     except FreemiumLimitExceeded as e:
         raise HTTPException(
             status_code=429,

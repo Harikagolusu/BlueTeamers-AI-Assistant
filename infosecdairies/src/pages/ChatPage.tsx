@@ -27,10 +27,14 @@ const ChatPage = () => {
   // they get their free chats from the floating window. Logged-in users (even
   // without a course purchase) can open the workspace and use their free chats;
   // the backend enforces the message limit / premium upgrades.
+  //
+  // FAIL-CLOSED: an unknown or errored access status must NOT silently grant a
+  // guest full access. Guests are gated unless we positively know they are
+  // premium (e.g. the freemium feature is disabled server-side).
   const { access } = useAiAssistant();
   const { isAuthenticated } = useAuth();
   const isGuest = !isAuthenticated;
-  const gated = isGuest && !!access && access.enabled && !access.is_premium;
+  const gated = isGuest && access?.is_premium !== true;
 
   // Track the previous conversation ID so we can detect *new* conversations.
   const prevConvIdRef = useRef<string | null>(null);

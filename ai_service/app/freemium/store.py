@@ -105,6 +105,43 @@ class FreemiumStore:
 
         await asyncio.to_thread(_reset)
 
+    async def carry_over(self, from_user_id: str, to_user_id: str) -> None:
+        """Move usage accumulated under ``from_user_id`` (a guest key) onto
+        ``to_user_id`` (the authenticated user), then drop the source row.
+
+        The two identities represent the same person on the same device across a
+        login boundary, so the count is shared rather than summed: the target
+        keeps the larger of the two counts so the daily quota is never bypassed
+        by logging in, and the stale guest row is pruned so the migration is
+        idempotent on subsequent authenticated requests.
+        """
+        def _merge():
+            conn = self._connect()
+            reset = self._current_reset()
+            src = conn.execute(
+                "SELECT used FROM daily_usage WHERE user_id = ? AND reset_at = ?",
+                (from_user_id, reset),
+            ).fetchone()
+            if src is None:
+                return
+            src_used = int(src[_USED_KEY])
+            conn.execute(
+                "DELETE FROM daily_usage WHERE user_id = ? AND reset_at = ?",
+                (from_user_id, reset),
+            )
+            conn.execute(
+                """
+                INSERT INTO daily_usage (user_id, reset_at, used)
+                VALUES (?, ?, ?)
+                ON CONFLICT(user_id, reset_at)
+                DO UPDATE SET used = MAX(used, excluded.used)
+                """,
+                (to_user_id, reset, src_used),
+            )
+            conn.commit()
+
+        await asyncio.to_thread(_merge)
+
     def _current_reset(self) -> str:
         """Compute the reset-window key from the configured policy.
 

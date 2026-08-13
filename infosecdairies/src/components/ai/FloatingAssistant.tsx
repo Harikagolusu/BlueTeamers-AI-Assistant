@@ -281,7 +281,12 @@ export const FloatingAssistant: React.FC = () => {
     }
   }, [messages, isLoading]);
 
-  const isFree = access?.access_level === "free";
+  // Guests are always on the free tier — even when the access status fetch
+  // fails (access === null), do NOT present them as premium/unlimited. Fail
+  // closed: unknown status for a guest still renders the free plan.
+  const isFree = isGuest
+    ? access?.access_level !== "premium"
+    : access?.access_level === "free";
   const remaining = isFree ? access?.remaining : undefined;
   const limit = isFree ? (access?.limit ?? FREE_LIMIT) : 0;
   const used = isFree ? (access?.used ?? 0) : 0;

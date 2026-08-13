@@ -73,9 +73,27 @@ class FreemiumService:
         self._premium_cache[user_id] = (premium, now)
         return premium
 
-    async def get_access_status(self, user_id: str, token: str) -> AccessStatus:
-        """Full access summary for the current user."""
+    async def _carry_guest_usage(self, user_id: str, client_id: Optional[str]) -> None:
+        """Fold usage accumulated under a pre-login guest identity into the
+        authenticated user's record so the daily allowance isn't bypassed (or
+        reset) by logging in. No-op unless a real user with a carried client id
+        is present."""
+        if not user_id or not client_id:
+            return
+        try:
+            await self._store.carry_over(f"guest:{client_id}", user_id)
+        except Exception as e:
+            logger.warning(f"Failed to carry guest usage for {user_id}: {e}")
+
+    async def get_access_status(
+        self, user_id: str, token: str, client_id: Optional[str] = None
+    ) -> AccessStatus:
+        """Full access summary for the current user. When an authenticated user
+        supplies a ``client_id`` (their pre-login guest identity), any usage
+        recorded under that guest key is folded into their count first."""
         enabled = self._enabled()
+        if enabled and user_id and not await self.is_premium(user_id, token):
+            await self._carry_guest_usage(user_id, client_id)
         if not enabled:
             return AccessStatus(
                 access_level=AccessLevel.PREMIUM,
@@ -118,12 +136,14 @@ class FreemiumService:
             reset_at=usage.reset,
         )
 
-    async def check_and_consume(self, user_id: str, token: str) -> AccessDecision:
+    async def check_and_consume(
+        self, user_id: str, token: str, client_id: Optional[str] = None
+    ) -> AccessDecision:
         """Validate and (for free users) consume one message slot.
 
         Raises FreemiumLimitExceeded when a free user is out of messages.
         """
-        status = await self.get_access_status(user_id, token)
+        status = await self.get_access_status(user_id, token, client_id)
         if not status.enabled or status.is_premium:
             return AccessDecision(allowed=True, status=status)
         if status.remaining <= 0:
