@@ -528,6 +528,30 @@ export function useChat(onNewConversation?: (id: string) => void) {
     }
   }, []);
 
+  // Default welcome shown instantly when the workspace opens, before (or instead
+  // of) the server-generated greeting. Uses the signed-in user's name so a new
+  // chat never opens blank even if the platform session fetch is slow or down.
+  const buildDefaultWelcome = useCallback((): ChatMessage => {
+    let name = "";
+    try {
+      name = localStorage.getItem("userFullName") || "";
+      if (!name) {
+        name = (localStorage.getItem("userEmail") || "").split("@")[0] || "";
+      }
+    } catch {
+      // storage unavailable -> anonymous greeting
+    }
+    const greeting = name ? `Hey ${name}!` : "Hey there!";
+    return {
+      role: "assistant",
+      content:
+        `${greeting} Welcome to BlueTeamers AI — your SOC mentor for cybersecurity. ` +
+        "I can explain security concepts (MITRE ATT&CK, SIEM, log analysis), help you " +
+        "analyze logs and alerts, quiz you on your courses, or guide you through practice labs. " +
+        "What would you like to work on today?",
+    };
+  }, []);
+
   const initializeSession = useCallback(async () => {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) return;
@@ -560,6 +584,11 @@ export function useChat(onNewConversation?: (id: string) => void) {
     }
 
     if (messages.length > 0) return;
+
+    // Show a name-aware welcome instantly so the workspace never opens blank.
+    // The server greeting (fetched below) replaces it when the platform session
+    // loads successfully; if that call fails, this default welcome stays.
+    setMessages([buildDefaultWelcome()]);
 
     try {
       setIsLoading(true);
