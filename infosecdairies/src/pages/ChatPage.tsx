@@ -35,9 +35,13 @@ const ChatPage = () => {
   // guest full access. Guests are gated unless we positively know they are
   // premium (e.g. the freemium feature is disabled server-side).
   const { access } = useAiAssistant();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAuthInitialized } = useAuth();
   const isGuest = !isAuthenticated;
-  const gated = isGuest && access?.is_premium !== true;
+  // The gate must not render while auth is still being restored from the stored
+  // token (an async step on mount) — otherwise a logged-in user would briefly
+  // see the "Login to unlock" screen flash before the workspace loads.
+  const authPending = !isAuthInitialized;
+  const gated = !authPending && isGuest && access?.is_premium !== true;
 
   // Track the previous conversation ID so we can detect *new* conversations.
   const prevConvIdRef = useRef<string | null>(null);

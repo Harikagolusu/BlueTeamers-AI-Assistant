@@ -11,6 +11,7 @@ interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isAuthInitialized: boolean;
   login: (data: { email: string; fullName?: string; tokens?: { access?: string; refresh?: string } }) => void;
   logout: () => void;
 }
@@ -53,6 +54,7 @@ function clearUserLocalCache() {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
   const refreshingRef = useRef(false);
 
   const logout = () => {
@@ -118,52 +120,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refreshToken = localStorage.getItem("refreshToken");
 
     (async () => {
-      if (storedEmail && accessToken) {
-        try {
-          const payload = await verifyJwtLocally(accessToken);
-          if (payload.email?.toLowerCase() === storedEmail.toLowerCase()) {
-            // Check if user_id matches what we stored — mismatch means the account
-            // was deleted and a new one was created with the same email.
-            const storedUserId = localStorage.getItem("userId");
-            const tokenUserId = payload.user_id;
-            if (storedUserId && tokenUserId && String(tokenUserId) !== storedUserId) {
-              clearUserLocalCache();
-            }
-            if (tokenUserId) localStorage.setItem("userId", String(tokenUserId));
-            setUser({ email: storedEmail, fullName: storedFullName || undefined });
-            return;
-          }
-        } catch {
-          // token invalid/expired — fall through to refresh
-        }
-      }
-
-      if (storedEmail && refreshToken) {
-        const result = await refreshAccessToken();
-        if (result === "ok") {
-          const newToken = localStorage.getItem("accessToken");
-          if (newToken) {
-            try {
-              const payload = await verifyJwtLocally(newToken);
-              if (payload.email?.toLowerCase() === storedEmail.toLowerCase()) {
-                const storedUserId = localStorage.getItem("userId");
-                const tokenUserId = payload.user_id;
-                if (storedUserId && tokenUserId && String(tokenUserId) !== storedUserId) {
-                  clearUserLocalCache();
-                }
-                if (tokenUserId) localStorage.setItem("userId", String(tokenUserId));
-                setUser({ email: storedEmail, fullName: storedFullName || undefined });
-                return;
+      try {
+        if (storedEmail && accessToken) {
+          try {
+            const payload = await verifyJwtLocally(accessToken);
+            if (payload.email?.toLowerCase() === storedEmail.toLowerCase()) {
+              // Check if user_id matches what we stored — mismatch means the account
+              // was deleted and a new one was created with the same email.
+              const storedUserId = localStorage.getItem("userId");
+              const tokenUserId = payload.user_id;
+              if (storedUserId && tokenUserId && String(tokenUserId) !== storedUserId) {
+                clearUserLocalCache();
               }
-            } catch {
-              // refreshed token also invalid
+              if (tokenUserId) localStorage.setItem("userId", String(tokenUserId));
+              setUser({ email: storedEmail, fullName: storedFullName || undefined });
+              return;
             }
+          } catch {
+            // token invalid/expired — fall through to refresh
           }
         }
-        // On startup, a network_error means the backend is unreachable — don't wipe the
-        // session. The user will appear logged out but tokens are preserved; the interval
-        // will recover the session once the backend comes back.
-        if (result === "auth_error") logout();
+
+        if (storedEmail && refreshToken) {
+          const result = await refreshAccessToken();
+          if (result === "ok") {
+            const newToken = localStorage.getItem("accessToken");
+            if (newToken) {
+              try {
+                const payload = await verifyJwtLocally(newToken);
+                if (payload.email?.toLowerCase() === storedEmail.toLowerCase()) {
+                  const storedUserId = localStorage.getItem("userId");
+                  const tokenUserId = payload.user_id;
+                  if (storedUserId && tokenUserId && String(tokenUserId) !== storedUserId) {
+                    clearUserLocalCache();
+                  }
+                  if (tokenUserId) localStorage.setItem("userId", String(tokenUserId));
+                  setUser({ email: storedEmail, fullName: storedFullName || undefined });
+                  return;
+                }
+              } catch {
+                // refreshed token also invalid
+              }
+            }
+          }
+          // On startup, a network_error means the backend is unreachable — don't wipe the
+          // session. The user will appear logged out but tokens are preserved; the interval
+          // will recover the session once the backend comes back.
+          if (result === "auth_error") logout();
+        }
+      } finally {
+        // Auth restore is complete: either the user was restored from a stored
+        // token, or there is genuinely no session. Consumers gate on this flag
+        // so they never flash a "login required" screen during the brief async
+        // restore that runs on first mount.
+        setIsAuthInitialized(true);
       }
     })();
   }, []);
@@ -267,7 +277,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser({ email, fullName });
   };
 
-  const value: AuthContextValue = { user, isAuthenticated: !!user, login, logout };
+  const value: AuthContextValue = { user, isAuthenticated: !!user, isAuthInitialized, login, logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

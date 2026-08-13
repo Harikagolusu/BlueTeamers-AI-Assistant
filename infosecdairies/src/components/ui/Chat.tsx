@@ -175,7 +175,11 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
         )}
         
         <ScrollArea className="h-full w-full z-10" ref={scrollRef}>
-          {!hasUserMessage && isLoading && !sessionInitMessage ? (
+          {/* Boot screen only while there is literally nothing to show. The
+              default welcome is seeded synchronously on init, so on a fresh
+              workspace this branch is skipped — no flash of the boot animation
+              before the dashboard/content loads. */}
+          {!hasUserMessage && messages.length === 0 && isLoading ? (
             <DashboardLoading />
           ) : (
           <div className="flex flex-col gap-3 sm:gap-4 max-w-6xl mx-auto pb-32 sm:pb-40 px-3 sm:px-5 md:px-6 py-4 sm:py-6">

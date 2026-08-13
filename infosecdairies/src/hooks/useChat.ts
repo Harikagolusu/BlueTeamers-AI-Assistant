@@ -624,7 +624,7 @@ export function useChat(onNewConversation?: (id: string) => void) {
     } finally {
       setIsLoading(false);
     }
-  }, [messages.length]);
+  }, [messages.length, buildDefaultWelcome]);
 
   // Sync the floating assistant to the latest conversation persisted by the
   // /chat workspace. Unlike initializeSession (which only restores when THIS
