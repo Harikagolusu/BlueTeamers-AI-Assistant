@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   MessageSquarePlus,
   Search,
-  Star,
   Trash2,
   PenLine,
   Check,
@@ -244,19 +243,6 @@ export const WorkspaceSidebar = ({
                                   {c.title || 'Untitled'}
                                 </span>
                               </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  conv.toggleFavorite(c.conversation_id, c.favorite);
-                                }}
-                                className={`p-0.5 rounded hover:bg-zinc-800 shrink-0 ${
-                                  c.favorite ? 'text-amber-400' : 'text-muted-foreground'
-                                }`}
-                                aria-label={c.favorite ? 'Unfavorite' : 'Favorite'}
-                                title={c.favorite ? 'Remove from favorites' : 'Mark chat as favorite'}
-                              >
-                                <Star className="w-3.5 h-3.5" fill={c.favorite ? 'currentColor' : 'none'} />
-                              </button>
                               <span className="flex items-center gap-1 text-[9px] font-mono text-muted-foreground shrink-0">
                                 <Clock className="w-3 h-3" />
                                 {relativeTime(c.updated_at)}

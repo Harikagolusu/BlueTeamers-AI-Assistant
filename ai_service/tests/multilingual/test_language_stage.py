@@ -38,7 +38,8 @@ def _context(**kwargs):
 @pytest.mark.asyncio
 async def test_explicit_manual_language_wins_and_persists():
     store = _FakeStore()
-    stage = LanguageContextStage(detector=_FakeDetector("te", 0.95), store=store)
+    # Detection agrees with the explicit pick -> manual selection is honored.
+    stage = LanguageContextStage(detector=_FakeDetector("hi", 0.8), store=store)
     ctx = _context(metadata={"language": "hi"})
 
     out = await stage.execute(ctx)
@@ -48,6 +49,37 @@ async def test_explicit_manual_language_wins_and_persists():
     assert "[Response Language]" in out.memory["language_block"]
     assert store.stored == "hi"
     assert ctx.metadata["language"] == "hi"
+
+
+@pytest.mark.asyncio
+async def test_explicit_manual_language_yields_to_clear_lingual_query():
+    # A user pinned the selector to Hindi, but the query is clearly Tinglish
+    # ("siem ante emiti"). Auto-detection must win so the romanized question
+    # isn't answered in the wrong (forced) language.
+    store = _FakeStore(stored="hi")
+    stage = LanguageContextStage(detector=_FakeDetector("te+en", 0.95), store=store)
+    ctx = _context(
+        metadata={"query": "siem ante emiti", "language": "hi"},
+    )
+
+    out = await stage.execute(ctx)
+
+    assert out.memory["language"] == "te+en"
+    assert out.memory["language_source"] == "detected"
+    assert store.stored == "te+en"
+
+
+@pytest.mark.asyncio
+async def test_explicit_manual_language_kept_when_detection_weak():
+    # Pinned to Telugu, query is English with low confidence -> manual wins.
+    store = _FakeStore()
+    stage = LanguageContextStage(detector=_FakeDetector("en", 0.6), store=store)
+    ctx = _context(metadata={"language": "te"})
+
+    out = await stage.execute(ctx)
+
+    assert out.memory["language"] == "te"
+    assert out.memory["language_source"] == "manual"
 
 
 @pytest.mark.asyncio

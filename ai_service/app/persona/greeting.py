@@ -129,17 +129,14 @@ class GreetingResponseBuilder:
     def _greeting_line(
         self, level: LearnerLevel, name: Optional[str], courses: Optional[str]
     ) -> str:
-        # Note: active courses are intentionally NOT listed here — they are
-        # already shown in the opening dashboard.
-        parts = [self._opening(name), ""]
-        parts.append(self._AGENT_LIST)
-        parts.append("")
-        parts.append(self._level_offer(level))
-        parts.append("")
-        parts.append(
-            "Let me know what you'd like to work on and I'll get started."
+        # Short greeting: opening + a brief tailored offer + a question.
+        # (The previous long agent-list is intentionally removed so "hi"/"hello"
+        # gets a concise reply instead of a wall of text.)
+        return (
+            f"{self._opening(name)} "
+            f"{self._level_offer(level)} "
+            "How can I help you today?"
         )
-        return "\n".join(parts)
 
     def _small_talk_line(self) -> str:
         return (

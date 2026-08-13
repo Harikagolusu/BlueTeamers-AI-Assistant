@@ -7,7 +7,6 @@ import { ChatInput } from './chat/ChatInput';
 import { ChatMarkdown } from './chat/ChatMarkdown';
 import { EmptyStateDashboard } from './chat/EmptyStateDashboard';
 import { DashboardLoading } from './chat/DashboardLoading';
-import { ProfileCard, ProgressCard, EnrolledCoursesCard, RecommendationCard, CourseCard } from './chat/PlatformCards';
 import { QuizCard, QuizOfferCard, QuizResultCard } from './chat/QuizCard';
 import { LabCard } from './chat/LabCard';
 import { consumeLogAnalysis } from '@/lib/logAnalysis';
@@ -191,9 +190,6 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
                       : 'bg-zinc-900 border-zinc-700 text-foreground'
                   }`}>
                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <img src={logo} alt="BlueTeamers" className="w-full h-full rounded-md object-contain" />}
-                    {msg.role !== 'user' && (
-                      <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 h-3 w-3 rounded-full border-2 border-background bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                    )}
                   </div>
 
                   {/* Message Content */}
@@ -275,22 +271,9 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
                       )}
 
                       {/* AI Structured Platform Cards (returned by Platform Engine) */}
-                      {msg.role === 'assistant' && msg.metadata?.platform?.cards && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 not-prose">
-                          {msg.metadata.platform.cards.map((card: { type: string; data: Record<string, unknown>; actions?: unknown[] }, cIdx: number) => {
-                            if (card.type === 'course_recommendation') {
-                              return <RecommendationCard key={cIdx} recommendations={[card.data]} />;
-                            }
-                            if (card.type === 'progress_snapshot') {
-                              return <ProgressCard key={cIdx} progress={[card.data]} courses={[]} />;
-                            }
-                            if (card.type === 'course' || (card.actions && card.actions.length > 0)) {
-                              return <CourseCard key={cIdx} card={card} />;
-                            }
-                            return null;
-                          })}
-                        </div>
-                      )}
+                      {/* NOTE: card bubbles deliberately disabled — course/platform
+                          cards no longer render in chat. Course suggestions appear
+                          as plain text below instead. */}
 
                       {/* Suggested courses in plain text only (no cards). */}
                       {msg.role === 'assistant' && msg.metadata?.suggested_courses && msg.metadata.suggested_courses.length > 0 && (
@@ -349,7 +332,6 @@ const TypingIndicator = () => {
     <div className="flex gap-4 items-end animate-fade-in">
       <div className="relative w-8 h-8 shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 shadow-[0_0_15px_rgba(0,186,216,0.2)]">
         <img src={logo} alt="BlueTeamers" className="h-full w-full rounded-md object-contain" />
-        <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 h-3 w-3 rounded-full border-2 border-background bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
       </div>
       <div className="flex items-center gap-1 px-4 py-3 rounded-2xl rounded-bl-sm bg-zinc-900/50 border border-zinc-800">
         {[0, 1, 2].map((i) => (

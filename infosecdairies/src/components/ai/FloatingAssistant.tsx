@@ -66,13 +66,21 @@ const getSavedLauncherPos = () => {
   return null;
 };
 
+// Saved pixel position for the (user-dragged) chat window. null = keep the
+// default CSS bottom-right anchor. A dragged position is clamped on load/resize
+// so it never lands off-screen.
 const getSavedWinPos = () => {
   try {
     const saved = localStorage.getItem(WIN_POS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
       if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
-        return { x: parsed.x, y: parsed.y };
+        const winW = Math.min(window.innerWidth * 0.92, 380);
+        const winH = Math.min(window.innerHeight * 0.68, 560);
+        return {
+          x: clamp(parsed.x, 8, Math.max(8, window.innerWidth - winW - 8)),
+          y: clamp(parsed.y, 8, Math.max(8, window.innerHeight - winH - 8)),
+        };
       }
     }
   } catch {
@@ -113,7 +121,9 @@ export const FloatingAssistant: React.FC = () => {
   } | null>(null);
   const suppressClickRef = useRef(false);
 
-  // Draggable window position (null = anchored to the launcher).
+  // Draggable window position (null = default CSS bottom-right anchor). The
+  // window only moves when the user explicitly drags the header — never from
+  // content/message/streaming/language changes or the launcher position.
   const [winPos, setWinPos] = useState<{ x: number; y: number } | null>(getSavedWinPos);
   const [windowDragging, setWindowDragging] = useState(false);
   const windowDragRef = useRef<{
@@ -150,6 +160,7 @@ export const FloatingAssistant: React.FC = () => {
         x: clamp(p.x, MARGIN, maxX),
         y: clamp(p.y, MARGIN, maxY),
       }));
+      // Keep a dragged window inside the viewport after a resize.
       setWinPos((p) => {
         if (!p) return p;
         const winW = Math.min(window.innerWidth * 0.92, 380);
@@ -216,11 +227,14 @@ export const FloatingAssistant: React.FC = () => {
   const onWindowPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!e.isPrimary) return;
     e.preventDefault();
+    // Start dragging from the window's current on-screen position (handles the
+    // default CSS-anchored case via getBoundingClientRect).
+    const rect = e.currentTarget.getBoundingClientRect();
     windowDragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      originX: renderedWinX,
-      originY: renderedWinY,
+      originX: winPos?.x ?? rect.left,
+      originY: winPos?.y ?? rect.top,
     };
     setWindowDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -229,11 +243,11 @@ export const FloatingAssistant: React.FC = () => {
   const onWindowPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = windowDragRef.current;
     if (!d) return;
-    const maxX = Math.max(8, window.innerWidth - winW - 8);
-    const maxY = Math.max(8, window.innerHeight - winH - 8);
+    const winW = Math.min(window.innerWidth * 0.92, 380);
+    const winH = Math.min(window.innerHeight * 0.68, 560);
     setWinPos({
-      x: clamp(d.originX + (e.clientX - d.startX), 8, maxX),
-      y: clamp(d.originY + (e.clientY - d.startY), 8, maxY),
+      x: clamp(d.originX + (e.clientX - d.startX), 8, Math.max(8, window.innerWidth - winW - 8)),
+      y: clamp(d.originY + (e.clientY - d.startY), 8, Math.max(8, window.innerHeight - winH - 8)),
     });
   };
 
@@ -241,38 +255,6 @@ export const FloatingAssistant: React.FC = () => {
     windowDragRef.current = null;
     setWindowDragging(false);
   };
-
-  // Position the chat window / minimized pill relative to the launcher.
-  const winW = Math.min(window.innerWidth * 0.92, 380);
-  const winH = Math.min(window.innerHeight * 0.68, 560);
-  const anchorWinX = clamp(
-    pos.x + BUTTON_SIZE / 2 - winW / 2,
-    8,
-    Math.max(8, window.innerWidth - winW - 8),
-  );
-  const anchorWinY =
-    pos.y - winH - 12 >= 8
-      ? pos.y - winH - 12
-      : clamp(pos.y + BUTTON_SIZE + 12, 8, Math.max(8, window.innerHeight - winH - 8));
-  const renderedWinX = clamp(
-    winPos?.x ?? anchorWinX,
-    8,
-    Math.max(8, window.innerWidth - winW - 8),
-  );
-  const renderedWinY = clamp(
-    winPos?.y ?? anchorWinY,
-    8,
-    Math.max(8, window.innerHeight - winH - 8),
-  );
-  const pillX = clamp(
-    renderedWinX + winW - 300,
-    8,
-    Math.max(8, window.innerWidth - 300 - 8),
-  );
-  const pillY =
-    renderedWinY - 76 >= 8
-      ? renderedWinY - 76
-      : clamp(renderedWinY + winH + 12, 8, window.innerHeight - 48);
 
   // The full workspace lives at /chat — don't double up the floating window there.
   useEffect(() => {
@@ -370,14 +352,12 @@ export const FloatingAssistant: React.FC = () => {
     );
   }
 
-  // Minimized: a compact pill bar above the launcher position.
+  // Minimized: a compact pill bar anchored to the bottom-right of the viewport
+  // (above the launcher), using pure CSS so it never moves with page/content.
   if (isMinimized) {
     return (
       <>
-        <div
-          style={{ left: pillX, top: pillY }}
-          className="fixed z-50 flex w-[300px] max-w-[calc(100vw-2.5rem)] items-center gap-2 rounded-xl border border-border bg-background/95 p-2 shadow-2xl backdrop-blur"
-        >
+        <div className="fixed right-4 bottom-[5.5rem] z-[80] flex w-[300px] max-w-[calc(100vw-2.5rem)] items-center gap-2 rounded-xl border border-border bg-background/95 p-2 shadow-2xl backdrop-blur">
           <button
             onClick={expand}
             className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-muted transition-colors"
@@ -407,10 +387,10 @@ export const FloatingAssistant: React.FC = () => {
   return (
     <>
       <div
-        style={{ left: renderedWinX, top: renderedWinY, width: winW, height: winH }}
-        className="fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-primary/20 bg-background/95 shadow-2xl backdrop-blur-xl animate-in fade-in"
+        style={winPos ? { left: winPos.x, top: winPos.y } : undefined}
+        className="fixed right-4 bottom-[5.5rem] z-[80] flex h-[min(560px,68vh)] w-[min(380px,92vw)] flex-col overflow-hidden rounded-2xl border border-primary/20 bg-background/95 shadow-2xl backdrop-blur-xl animate-in fade-in"
       >
-        {/* Header (draggable) */}
+        {/* Header (draggable to reposition; otherwise stay anchored bottom-right) */}
         <div
           onPointerDown={onWindowPointerDown}
           onPointerMove={onWindowPointerMove}
@@ -508,13 +488,13 @@ export const FloatingAssistant: React.FC = () => {
                   </div>
                   <div
                     className={cn(
-                      "flex flex-col min-w-0 max-w-[85%]",
-                      msg.role === "user" ? "items-end" : "items-start",
+                      "flex flex-col min-w-0",
+                      msg.role === "user" ? "max-w-[85%] items-end" : "flex-1 w-full items-start",
                     )}
                   >
                     <div
                       className={cn(
-                        "rounded-2xl border prose prose-zinc prose-invert prose-sm max-w-none",
+                        "min-w-0 w-full max-w-full break-words overflow-x-auto rounded-2xl border prose prose-zinc prose-invert prose-sm max-w-none",
                         msg.role === "user"
                           ? "rounded-tr-sm border-primary/20 bg-primary/10 px-3.5 py-2 text-foreground"
                           : "rounded-tl-sm border-zinc-800 bg-zinc-900/80 backdrop-blur-sm px-3.5 py-2.5 text-zinc-100 shadow-[0_0_15px_rgba(0,0,0,0.2)]",

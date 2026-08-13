@@ -7,8 +7,13 @@ from app.prompt_builder.simple_prompt_builder import SimplePromptBuilder
 
 
 class _FakeDetector:
+    """Realistic detector: Telugu script for the Telugu query, English for the
+    English query (so an explicit 'en' stays English for English input)."""
+
     def detect(self, text):
-        return "te", 0.95
+        if "అంటే" in text:
+            return "te", 0.95
+        return "en", 0.9
 
 
 class _NoopStore:
