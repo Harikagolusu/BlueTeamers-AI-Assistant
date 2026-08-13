@@ -5,7 +5,6 @@ import { Crown, Sparkles, Shield } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Chat } from '@/components/ui/Chat';
 import { WorkspaceSidebar } from '@/components/ui/chat/WorkspaceSidebar';
-import { useChat } from '@/hooks/useChat';
 import { useConversations } from '@/hooks/useConversations';
 import { useAiAssistant } from '@/context/AiAssistantContext';
 import { useAuth } from '@/context/AuthContext';
@@ -20,7 +19,11 @@ const ChatPage = () => {
   // This keeps React's rules-of-hooks happy and ensures state updates
   // propagate correctly to ChatPage (and thus to its children).
   const convState = useConversations();
-  const chatState = useChat();
+  // Share the single chat state owned by AiAssistantProvider. The floating
+  // assistant and the /chat workspace are the SAME conversation store, so
+  // opening the full workspace mid-stream keeps the live streaming response
+  // instead of a frozen snapshot restored from sessionStorage.
+  const { chatState } = useAiAssistant();
   const { conversationId, isLoading } = chatState;
 
   // Freemium: only guests (not logged in) are kept out of the full workspace —
