@@ -389,11 +389,20 @@ export const FloatingAssistant: React.FC = () => {
     );
   }
 
+  // Floating-only dimensions, derived purely from the current viewport. They are
+  // NEVER computed from the full workspace or from message/content size, so the
+  // window can never inherit a fullscreen layout — only the conversation
+  // (chatState) is shared with the /chat workspace.
+  const floatW = Math.min(window.innerWidth * 0.92, 380);
+  const floatH = Math.min(window.innerHeight * 0.68, 560);
+
   return (
     <>
       <div
-        style={winPos ? { left: winPos.x, top: winPos.y } : undefined}
-        className="fixed right-4 bottom-[5.5rem] z-[80] flex h-[min(560px,68vh)] w-[min(380px,92vw)] flex-col overflow-hidden rounded-2xl border border-primary/20 bg-background/95 shadow-2xl backdrop-blur-xl animate-in fade-in"
+        style={winPos
+          ? { right: "auto", bottom: "auto", left: winPos.x, top: winPos.y, width: floatW, height: floatH, maxWidth: "92vw", maxHeight: "68vh" }
+          : { width: floatW, height: floatH, maxWidth: "92vw", maxHeight: "68vh" }}
+        className="fixed right-4 bottom-[5.5rem] z-[80] flex flex-col overflow-hidden rounded-2xl border border-primary/20 bg-background/95 shadow-2xl backdrop-blur-xl animate-in fade-in"
       >
         {/* Header (draggable to reposition; otherwise stay anchored bottom-right) */}
         <div
