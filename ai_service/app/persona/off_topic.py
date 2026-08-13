@@ -25,9 +25,11 @@ class OffTopicResponseBuilder:
     ) -> str:
         """Builds the scope-refusal response."""
         return (
-            "I'm focused on helping you with cybersecurity content — threat "
-            "intelligence, SOC operations, incident response, detection "
-            "engineering, and the BlueTeamers courses and labs.\n\n"
-            "That question is outside my scope. If you'd like, I can help you "
-            "with a security concept, a lab, or a course topic instead."
+            "I'd love to help with that, but I'm BlueTeamers' cybersecurity "
+            "tutor, so I stay focused on security content — threat intelligence, "
+            "SOC operations, incident response, detection engineering, and the "
+            "BlueTeamers courses and labs.\n\n"
+            "That question is a bit outside my scope. But I can help you with a "
+            "security concept, a practice question, a lab, or a course topic — "
+            "what would you like to explore?"
         )

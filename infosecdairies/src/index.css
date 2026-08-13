@@ -189,6 +189,44 @@ All colors MUST be HSL.
   --tw-prose-quote-borders: hsl(var(--border));
 }
 
+/* Compact prose spacing for AI responses: Tailwind's prose defaults put
+   ~1.1–1.7em between headings/paragraphs/lists, which reads as big gaps
+   between sections. Collapse them to tighter margins so answers flow
+   together. The bubble element carries `prose` and an inner div carries
+   `bt-cyber-message`, so these are descendant selectors. The floating
+   window uses its own bt-float-sm rules and is untouched. */
+.bt-cyber-message :where(h1, h2, h3, h4, h5, h6) {
+  margin-top: 0.85em;
+  margin-bottom: 0.3em;
+}
+
+.bt-cyber-message :where(p, ul, ol, blockquote, table, pre) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.bt-cyber-message :where(li) {
+  margin-top: 0.15em;
+  margin-bottom: 0.15em;
+}
+
+.bt-cyber-message :where(ul > li > p, ol > li > p) {
+  margin: 0;
+}
+
+.bt-cyber-message :where(hr) {
+  margin-top: 0.7em;
+  margin-bottom: 0.7em;
+}
+
+.bt-cyber-message > :first-child {
+  margin-top: 0 !important;
+}
+
+.bt-cyber-message > :last-child {
+  margin-bottom: 0 !important;
+}
+
 /* Monospace typeface for the chat input (search/query bar) and user messages.
    Font only — no accent color or glow, so user messages keep their existing
    tinted-bubble UI. */
@@ -211,6 +249,24 @@ All colors MUST be HSL.
   --tw-prose-bullets: hsl(var(--foreground));
   --tw-prose-hr: hsl(var(--border));
   --tw-prose-quote-borders: hsl(var(--border));
+}
+
+/* Floating assistant message bubbles: slightly tighter typography than the
+   full workspace so cards read well in the 380px window. Scoped to the
+   floating-only `bt-float-sm` marker on the bubble so the workspace Chat is
+   untouched. */
+.bt-float-sm.prose :where(p, li) {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.bt-float-sm.prose :where(h1, h2, h3, h4, h5, h6) {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.bt-float-sm.prose :where(pre, code) {
+  font-size: 0.75rem;
 }
 
 @keyframes bt-terminal-tail {

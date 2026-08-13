@@ -10,51 +10,51 @@ class UserContextBuilder:
 
     async def build(self, token: str) -> str:
         """
-        Builds a comprehensive user context string by querying the PlatformRepository
+        Builds a compact user context string by querying the PlatformRepository
         for live data (profile, enrolled courses, progress, certificates).
-        """
-        context_parts = []
-        context_parts.append("### User Platform Context ###")
 
-        profile = enrolled = None
+        Kept intentionally sparse so the LLM spends tokens answering the user
+        rather than re-reading a long platform block: only data that is actually
+        present (and useful for personalizing answers) is included. Absent or
+        unavailable values are skipped entirely instead of emitting filler lines.
+        """
+        profile_fields = []
         try:
             profile = await self.platform_repo.get_user_profile(token) if token else None
         except Exception as e:
             logger.error(f"Failed to fetch profile for user context: {e}")
+            profile = None
+        if profile:
+            if profile.full_name:
+                profile_fields.append(f"Name: {profile.full_name}")
+            elif profile.email:
+                profile_fields.append(f"Name: {profile.email}")
+
         try:
             enrolled = await self.platform_repo.get_enrolled_courses(token) if token else []
         except Exception as e:
             logger.error(f"Failed to fetch enrolled courses for user context: {e}")
+            enrolled = []
 
-        if profile and (profile.full_name or profile.email):
-            context_parts.append(f"Name: {profile.full_name or profile.email}")
-        else:
-            context_parts.append("Name: Not available.")
-
+        enrolled_lines = []
+        progress_lines = []
+        cert_lines = []
         if enrolled:
-            course_names = ", ".join([c.title for c in enrolled])
-            context_parts.append(f"Active Enrollments: {course_names}")
-        else:
-            context_parts.append("Active Enrollments: None.")
-
-        if enrolled and token:
-            progress_strs = []
             for course in enrolled:
+                enrolled_lines.append(course.title)
                 try:
                     p = await self.platform_repo.get_progress(course.id, token)
                 except Exception as e:
                     logger.error(f"Failed to fetch progress for {course.id}: {e}")
                     p = None
                 if p and p.completed_lessons:
-                    progress_strs.append(
-                        f"{course.title} ({p.percent_complete}% - {len(p.completed_lessons)} lessons completed)"
+                    progress_lines.append(
+                        f"{course.title}: {p.percent_complete}% ({len(p.completed_lessons)} lessons complete)"
                     )
-            if progress_strs:
-                context_parts.append("Recent Progress: " + "; ".join(progress_strs))
-            else:
-                context_parts.append("Recent Progress: No lessons completed yet.")
-        else:
-            context_parts.append("Recent Progress: Not available.")
+        if enrolled_lines:
+            profile_fields.append("Enrolled courses: " + ", ".join(enrolled_lines))
+        if progress_lines:
+            profile_fields.append("Course progress: " + "; ".join(progress_lines))
 
         if token:
             try:
@@ -63,12 +63,10 @@ class UserContextBuilder:
                 logger.error(f"Failed to fetch certificates for user context: {e}")
                 certificates = []
             if certificates:
-                cert_strs = ", ".join([c.course_slug for c in certificates])
-                context_parts.append(f"Certificates: {cert_strs}")
-            else:
-                context_parts.append("Certificates: None.")
+                cert_lines.append(", ".join([c.course_slug for c in certificates]))
+                profile_fields.append("Certificates: " + "; ".join(cert_lines))
 
-        context_parts.append("Badges: This feature is not yet available on the platform.")
-        context_parts.append("Learning Paths: This feature is not yet available on the platform.")
+        if not profile_fields:
+            return ""
 
-        return "\n".join(context_parts)
+        return "### User Platform Context ###\n" + "\n".join(profile_fields)

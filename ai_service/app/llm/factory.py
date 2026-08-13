@@ -15,6 +15,7 @@ class LLMFactory:
 
     Provider selection is fully configuration-driven:
       - LLM_PROVIDER=omniroute -> OmniRoute (development default)
+      - LLM_PROVIDER=deepseek  -> DeepSeek official API (real API key)
       - LLM_PROVIDER=bedrock   -> Amazon Bedrock (production default)
       - LLM_PROVIDER=ollama    -> local Ollama
       - LLM_PROVIDER=auto      -> resolved from the deployment mode
@@ -39,6 +40,9 @@ class LLMFactory:
             cls._instance = OllamaProvider()
         elif provider_mode == "bedrock":
             cls._instance = BedrockProvider()
+        elif provider_mode == "deepseek":
+            from app.llm.providers.deepseek_provider import DeepSeekProvider
+            cls._instance = DeepSeekProvider()
         elif provider_mode == "omniroute":
             from app.llm.providers.omniroute_provider import OmniRouteProvider
             cls._instance = OmniRouteProvider()

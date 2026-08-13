@@ -494,15 +494,15 @@ export const FloatingAssistant: React.FC = () => {
                   <div
                     className={cn(
                       "flex flex-col min-w-0",
-                      msg.role === "user" ? "max-w-[85%] items-end" : "flex-1 w-full items-start",
+                      msg.role === "user" ? "max-w-[85%] items-end" : "max-w-[92%] items-start",
                     )}
                   >
                     <div
                       className={cn(
-                        "min-w-0 w-full max-w-full break-words overflow-x-auto rounded-2xl border prose prose-zinc prose-invert prose-sm max-w-none",
+                        "bt-float-sm min-w-0 w-full max-w-full break-words overflow-x-auto rounded-2xl border prose prose-zinc prose-invert prose-sm max-w-none",
                         msg.role === "user"
-                          ? "rounded-tr-sm border-primary/20 bg-primary/10 px-3.5 py-2 text-foreground"
-                          : "rounded-tl-sm border-zinc-800 bg-zinc-900/80 backdrop-blur-sm px-3.5 py-2.5 text-zinc-100 shadow-[0_0_15px_rgba(0,0,0,0.2)]",
+                          ? "rounded-tr-sm border-primary/20 bg-primary/10 px-3 py-1.5 text-foreground"
+                          : "rounded-tl-sm border-zinc-800 bg-zinc-900/80 backdrop-blur-sm px-3.5 py-2 text-zinc-100 shadow-[0_0_15px_rgba(0,0,0,0.2)]",
                       )}
                     >
                       <div

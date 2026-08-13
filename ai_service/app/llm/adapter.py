@@ -19,9 +19,15 @@ from app.llm.interfaces import ILLMService
 from app.llm.base import BaseLLMProvider
 from app.llm.schemas import LLMRequest
 from app.llm.images import normalize_images
+from app.core.config import settings
 import logging
 
 logger = logging.getLogger("app.llm.adapter")
+
+
+def _resolve_max_tokens(explicit) -> int | None:
+    """Apply the global LLM_MAX_TOKENS safety cap when no explicit cap is set."""
+    return explicit or settings.LLM_MAX_TOKENS
 
 
 class LLMProviderAdapter(ILLMService):
@@ -45,7 +51,7 @@ class LLMProviderAdapter(ILLMService):
             prompt=prompt,
             temperature=kwargs.get("temperature", 0.7),
             system_prompt=kwargs.get("system_prompt", None),
-            max_tokens=kwargs.get("max_tokens", None),
+            max_tokens=_resolve_max_tokens(kwargs.get("max_tokens")),
             images=normalize_images(kwargs.get("images")),
         )
         logger.debug(f"LLMProviderAdapter.generate() -> prompt length: {len(prompt)}")
@@ -58,7 +64,7 @@ class LLMProviderAdapter(ILLMService):
             prompt=prompt,
             temperature=kwargs.get("temperature", 0.7),
             system_prompt=kwargs.get("system_prompt", None),
-            max_tokens=kwargs.get("max_tokens", None),
+            max_tokens=_resolve_max_tokens(kwargs.get("max_tokens")),
             stream=True,
             images=normalize_images(kwargs.get("images")),
         )

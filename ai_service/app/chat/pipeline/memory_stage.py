@@ -22,8 +22,13 @@ class MemoryLoadStage(IExecutionStage):
             tenant_id=context.tenant_id or "default"
         )
 
-        # Returns a new context object due to immutability
-        return context.with_memory(history)
+        # Merge the loaded history into the existing memory instead of
+        # replacing it: upstream stages (e.g. LanguageContextStage) may have
+        # already written resolved keys like language_block into context.memory,
+        # and replacing wholesale would silently drop them.
+        memory = dict(context.memory or {})
+        memory.update(history or {})
+        return context.with_memory(memory)
 
 
 def _memory_session_user(context: ExecutionContext) -> str:

@@ -81,7 +81,13 @@ class PersistenceStage(IExecutionStage):
         )
 
         # Record the turn to the conversation store for Recent Conversations & Favorites.
-        if self._conversations is not None and getattr(settings, "CONVERSATION_PERSISTENCE_ENABLED", True):
+        # Guest sessions (guest:<client_id>) are excluded: they only feed the
+        # short-term memory window, never the authenticated Recent Conversations list.
+        if (
+            self._conversations is not None
+            and getattr(settings, "CONVERSATION_PERSISTENCE_ENABLED", True)
+            and not str(context.session_user).startswith("guest:")
+        ):
             try:
                 conv_meta = self._extract_conversation_metadata(context, response)
                 conversation_id = context.metadata.get("conversation_id")

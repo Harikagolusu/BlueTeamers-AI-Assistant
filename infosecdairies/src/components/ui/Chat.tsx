@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { User, Trash2, Star } from 'lucide-react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { User, Trash2, Star, ArrowDown } from 'lucide-react';
 import logo from '@/assets/logo-color.png';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,6 +36,18 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pendingAnalysisHandled = useRef(false);
   const nearBottomRef = useRef(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const scrollToBottom = useCallback(() => {
+    const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
+      setShowScrollToBottom(false);
+    }
+  }, []);
+  const sendMessageRef = useRef(sendMessage);
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  }, [sendMessage]);
 
   useEffect(() => {
     const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
@@ -43,6 +55,7 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
     const onScroll = () => {
       const el = viewport as HTMLElement;
       nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+      setShowScrollToBottom(!nearBottomRef.current);
     };
     viewport.addEventListener('scroll', onScroll, { passive: true });
     return () => viewport.removeEventListener('scroll', onScroll);
@@ -56,8 +69,25 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
     const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
     if (viewport && nearBottomRef.current) {
       viewport.scrollTop = viewport.scrollHeight;
+      setShowScrollToBottom(false);
     }
   }, [messages, isLoading]);
+
+  // When a new user query is sent, always jump to the bottom even if the user
+  // scrolled up — they're starting a new exchange, so keep them at the end.
+  const prevUserCountRef = useRef(0);
+  useEffect(() => {
+    const userCount = messages.filter(m => m.role === 'user').length;
+    const isNewUserQuery = userCount > prevUserCountRef.current;
+    prevUserCountRef.current = userCount;
+    if (isNewUserQuery) {
+      const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+        setShowScrollToBottom(false);
+      }
+    }
+  }, [messages]);
 
   useEffect(() => {
     initializeSession();
@@ -148,7 +178,7 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
           {!hasUserMessage && isLoading && !sessionInitMessage ? (
             <DashboardLoading />
           ) : (
-          <div className="flex flex-col gap-4 sm:gap-6 max-w-4xl mx-auto pb-32 sm:pb-40 px-3 sm:px-6 md:px-8 py-4 sm:py-6">
+          <div className="flex flex-col gap-3 sm:gap-4 max-w-6xl mx-auto pb-32 sm:pb-40 px-3 sm:px-5 md:px-6 py-4 sm:py-6">
             
             {/* Show Empty State Dashboard if no user interaction yet */}
             {!hasUserMessage && sessionInitMessage && sessionInitMessage.metadata?.platform?.context && (
@@ -307,7 +337,22 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
         
         {/* Input Area (Pinned to bottom) */}
         <div className="absolute bottom-0 left-0 right-0 px-2 sm:px-4 pt-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-4 bg-gradient-to-t from-background via-background/90 to-transparent z-20 pointer-events-none">
-          <div className="max-w-3xl mx-auto pointer-events-auto shadow-2xl rounded-2xl relative">
+          {/* Scroll-to-bottom arrow, shown only when scrolled up */}
+          {showScrollToBottom && (
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={scrollToBottom}
+                title="Jump to latest"
+                aria-label="Jump to latest message"
+                className="h-9 w-9 rounded-full border-border bg-background/80 backdrop-blur-md shadow-lg hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+              >
+                <ArrowDown className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+          <div className="max-w-5xl mx-auto pointer-events-auto shadow-2xl rounded-2xl relative">
             <ChatInput 
                             onSendMessage={(text, attachments) => sendMessage(text, attachments)}
               onStop={stopGenerating}

@@ -83,6 +83,15 @@ class Settings(BaseSettings):
     # tokens); oc/deepseek-v4-flash-free answers fully and keeps context.
     OMNIROUTE_MODEL: str = "oc/deepseek-v4-flash-free"
 
+    # DeepSeek official API (OpenAI-compatible). Set LLM_PROVIDER=deepseek to
+    # use it. The key lives in .env (gitignored); NEVER hardcode it.
+    DEEPSEEK_API_KEY: Optional[str] = None
+    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
+    DEEPSEEK_MODEL: str = "deepseek-v4-flash"
+    # Optional hard cap on output tokens per LLM call (all providers). Set in
+    # .env to bound spend while testing (e.g. LLM_MAX_TOKENS=256); None = no cap.
+    LLM_MAX_TOKENS: Optional[int] = None
+
     # MCP servers (config-driven; see app/mcp/config.py).
     #   MCP_SERVERS_CONFIG: inline JSON string, e.g.
     #     {"servers": {"filesystem": {

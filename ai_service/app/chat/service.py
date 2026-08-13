@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, List, Union
+from typing import AsyncGenerator, List, Optional, Union
 
 
 def _tokenize_preserving_newlines(text: str) -> List[str]:
@@ -31,18 +31,30 @@ from app.chat.sanitize import clean_response
 logger = logging.getLogger("app.chat.service")
 
 
-def _resolve_user(token: str):
-    """Extract (session_user, tenant_id) from the JWT for memory scoping.
+GUEST_ID_PREFIX = "guest:"
 
-    session_user is the stable ``user_id`` claim (never the ``email`` claim,
-    which vanishes after token refresh). This keeps conversation persistence,
-    short-term memory and adaptive learning keyed consistently for the same
-    user before and after a token refresh.
+
+def _resolve_user(token: str, client_id: Optional[str] = None):
+    """Extract (session_user, tenant_id) for memory/adaptive scoping.
+
+    Authenticated users are keyed by the stable ``user_id`` claim (never the
+    ``email`` claim, which vanishes after token refresh). This keeps
+    conversation persistence, short-term memory and adaptive learning keyed
+    consistently for the same user before and after a token refresh.
+
+    Guests without a JWT but carrying the persistent browser ``client_id`` are
+    scoped under the same namespaced ``guest:`` id the freemium layer uses, so
+    the short-term conversation memory window works end-to-end for anonymous
+    sessions too. Fully anonymous callers (no token, no client id) have no
+    identity and therefore no memory.
     """
-    user_id, _email = resolve_user_identity(token)
-    if not user_id:
-        return None, None
-    return user_id, user_id
+    if token:
+        user_id, _email = resolve_user_identity(token)
+        if user_id:
+            return user_id, user_id
+    if client_id:
+        return f"{GUEST_ID_PREFIX}{client_id}", None
+    return None, None
 
 class ChatService(IChatService):
     """
@@ -61,7 +73,7 @@ class ChatService(IChatService):
     async def process_request(self, request: ChatRequest) -> Union[ChatResponse, AsyncGenerator[str, None]]:
         # 1. Validation & Setup
         # Create an initial ExecutionContext
-        session_user, tenant_id = _resolve_user(request.token)
+        session_user, tenant_id = _resolve_user(request.token, request.client_id)
         context = ExecutionContext(
             correlation_id=uuid.uuid4(),
             session_user=session_user,
@@ -173,13 +185,18 @@ class ChatService(IChatService):
         )
 
         if self._conversations is not None and getattr(settings, "CONVERSATION_PERSISTENCE_ENABLED", True):
-            try:
-                await self._conversations.record_turn(
-                    user_id=pending_turn.get("session_user"),
-                    conversation_id=pending_turn.get("conversation_id"),
-                    user_message=query,
-                    ai_message=ai_message,
-                    metadata=pending_turn.get("conversation_metadata") or {},
-                )
-            except Exception as exc:
-                logger.warning("Failed to record streamed conversation turn: %s", exc)
+            # Guest threads only feed the short-term memory window above; they
+            # must not appear in the authenticated user's Recent Conversations.
+            if pending_turn.get("session_user") and not str(
+                pending_turn.get("session_user")
+            ).startswith(GUEST_ID_PREFIX):
+                try:
+                    await self._conversations.record_turn(
+                        user_id=pending_turn.get("session_user"),
+                        conversation_id=pending_turn.get("conversation_id"),
+                        user_message=query,
+                        ai_message=ai_message,
+                        metadata=pending_turn.get("conversation_metadata") or {},
+                    )
+                except Exception as exc:
+                    logger.warning("Failed to record streamed conversation turn: %s", exc)

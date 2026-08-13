@@ -79,13 +79,15 @@ class GreetingResponseBuilder:
     def _opening(self, name: Optional[str]) -> str:
         if name:
             return (
-                f"Welcome back to the BlueTeamers AI Workspace, {name}. "
-                f"I'm your AI assistant, supported by a team of specialized "
-                f"agents ready to help you."
+                f"Welcome back to the BlueTeamers AI Workspace, {name}! "
+                f"I'm your friendly cybersecurity tutor — great to see you. "
+                f"I'm here to make security operations easy to understand and "
+                f"fun to practice."
             )
         return (
-            "Welcome to the BlueTeamers AI Workspace. I'm your AI assistant, "
-            "supported by a team of specialized agents ready to help you."
+            "Welcome to the BlueTeamers AI Workspace! I'm your friendly "
+            "cybersecurity tutor — I'll help you learn security operations and "
+            "practice hands-on, at your own pace."
         )
 
     def _level_offer(self, level: LearnerLevel) -> str:
@@ -93,19 +95,23 @@ class GreetingResponseBuilder:
             LearnerLevel.BEGINNER: (
                 "I can walk you through the fundamentals — how a SOC operates, "
                 "phishing basics, or how SIEM detections are built — one step at "
-                "a time, with clear explanations."
+                "a time, with clear explanations and quick practice questions so "
+                "it really sticks."
             ),
             LearnerLevel.INTERMEDIATE: (
                 "We can go straight to practical work: log correlation, detection "
-                "logic, or a full investigation workflow."
+                "logic, or a full investigation workflow — with mini scenarios to "
+                "test your thinking as we go."
             ),
             LearnerLevel.ADVANCED: (
                 "We can go deeper: detection engineering, MITRE ATT&CK mapping, "
-                "threat hunting, or an advanced incident response scenario."
+                "threat hunting, or an advanced incident response scenario — and "
+                "I'll throw practice challenges your way."
             ),
             LearnerLevel.PROFESSIONAL: (
                 "We can tackle enterprise-grade topics: detection strategy, SOC "
-                "architecture, false-positive tuning, or production runbooks."
+                "architecture, false-positive tuning, or production runbooks — "
+                "with real-world decision scenarios to sharpen your judgment."
             ),
             LearnerLevel.INSTRUCTOR: (
                 "I can help you build teaching material: lesson plans, quiz "
@@ -135,11 +141,12 @@ class GreetingResponseBuilder:
         return (
             f"{self._opening(name)} "
             f"{self._level_offer(level)} "
-            "How can I help you today?"
+            "What would you like to learn or practice today?"
         )
 
     def _small_talk_line(self) -> str:
         return (
-            "Copy that. I'm focused on getting you sharp at security operations. "
-            "Want to dig into a concept, a lab, or a course topic?"
+            "Happy to chat! I'm your friendly guide to everything blue team — "
+            "SOC, threat hunting, detection, and hands-on labs. Want to explore "
+            "a concept, try a practice question, or jump into a lab?"
         )

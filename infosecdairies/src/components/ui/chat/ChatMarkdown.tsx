@@ -5,7 +5,7 @@ import type { Components } from "react-markdown";
 
 const markdownComponents: Components = {
   table: ({ node, ...props }) => (
-    <div className="not-prose my-3 overflow-x-auto rounded-lg border border-zinc-700/60 bg-zinc-950/40">
+    <div className="not-prose my-2 overflow-x-auto rounded-lg border border-zinc-700/60 bg-zinc-950/40">
       <table className="w-full border-collapse text-sm" {...props} />
     </div>
   ),
@@ -26,7 +26,7 @@ const markdownComponents: Components = {
   ),
   pre: ({ node, ...props }) => (
     <pre
-      className="not-prose my-3 overflow-x-auto rounded-lg border border-zinc-700/60 bg-zinc-950/80 p-3 text-xs leading-relaxed text-zinc-100"
+      className="not-prose my-2 overflow-x-auto rounded-lg border border-zinc-700/60 bg-zinc-950/80 p-3 text-xs leading-relaxed text-zinc-100"
       {...props}
     />
   ),
@@ -50,7 +50,7 @@ const markdownComponents: Components = {
   },
   blockquote: ({ node, ...props }) => (
     <blockquote
-      className="my-3 border-l-2 border-primary/60 pl-3 italic text-zinc-300"
+      className="my-2 border-l-2 border-primary/60 pl-3 italic text-zinc-300"
       {...props}
     />
   ),
