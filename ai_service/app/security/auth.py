@@ -27,6 +27,15 @@ def _load_public_key() -> Optional[str]:
 
 _RS256_PUBLIC_KEY = _load_public_key()
 
+# Production must fail fast rather than silently running without a verify key:
+# every request would be rejected (RS256-only) anyway, so surfacing the
+# misconfiguration at startup beats discovering it after deploy.
+if settings.is_production and not _RS256_PUBLIC_KEY:
+    raise RuntimeError(
+        "Production requires a readable JWT_PUBLIC_KEY_PATH. Set it to the "
+        "Django RS256 public key and restart. Refusing to start without it."
+    )
+
 
 class JWTValidator:
     """
@@ -64,14 +73,29 @@ class JWTValidator:
 
     def decode_token(self, token: str) -> Dict[str, Any]:
         """
-        Decodes the JWT token and verifies the signature and expiration.
+        Decodes the JWT token and verifies the signature, expiration, not-before
+        and (when configured) issuer/audience claims.
         """
         try:
+            decode_options: Dict[str, Any] = {
+                "verify_exp": True,
+                "verify_nbf": True,
+                "verify_iat": True,
+                "require": ["exp", "iat"],
+            }
+            verify_kwargs: Dict[str, Any] = {}
+            if settings.JWT_ISSUER:
+                verify_kwargs["issuer"] = settings.JWT_ISSUER
+                decode_options["require"].append("iss")
+            if settings.JWT_AUDIENCE:
+                verify_kwargs["audience"] = settings.JWT_AUDIENCE
+                decode_options["require"].append("aud")
             payload = jwt.decode(
                 token,
                 self.secret,
                 algorithms=self.algorithms,
-                options={"verify_exp": True}
+                options=decode_options,
+                **verify_kwargs,
             )
             return payload
         except jwt.ExpiredSignatureError:

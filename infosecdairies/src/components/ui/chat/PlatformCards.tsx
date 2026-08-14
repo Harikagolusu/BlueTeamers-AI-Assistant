@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { User, BookOpen, GraduationCap, Compass, ExternalLink, Info, Clock, BarChart3, PlayCircle, Star, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { safeUrl } from '@/lib/safeUrl';
 import { getCourseBySlug } from '@/data/courses';
 
 // Import all course thumbnails (keyed by canonical course slug, matching the
@@ -128,7 +129,9 @@ export const CourseCard: React.FC<{ card: any }> = ({ card }) => {
       return;
     }
     if (url) {
-      window.open(url, '_blank');
+      // Only ever open a URL that survives the scheme whitelist — the payload
+      // originates from an AI response, so javascript:/data: must be impossible.
+      window.open(safeUrl(url), '_blank');
     }
   };
 

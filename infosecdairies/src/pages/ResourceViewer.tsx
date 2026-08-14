@@ -5,6 +5,23 @@ import { getCourseById } from "@/data/courses";
 import { getResourceContent } from "@/data/resourceContent";
 import logo from "@/assets/logo.png";
 
+// Escape HTML then apply a minimal inline markdown subset. Escaping first means
+// any raw markup in content renders as literal text instead of executable DOM
+// (stored-XSS). The tags we inject are generated here, so they always pass through.
+const escapeHtml = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const renderInline = (s: string) =>
+  escapeHtml(s)
+    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono">$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
 
 const ResourceViewer = () => {
   const { courseId, resourceId } = useParams<{ courseId: string; resourceId: string }>();
@@ -50,7 +67,7 @@ const ResourceViewer = () => {
                 <tr key={ri} className="border-b border-white/[0.06] hover:bg-white/[0.02]">
                   {row.map((cell, ci) => (
                     <td key={ci} className="py-2 px-3 text-foreground/80">
-                      <span dangerouslySetInnerHTML={{ __html: cell.trim().replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono">$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>') }} />
+                      <span dangerouslySetInnerHTML={{ __html: renderInline(cell.trim()) }} />
                     </td>
                   ))}
                 </tr>
@@ -137,7 +154,7 @@ const ResourceViewer = () => {
         elements.push(
           <div key={`check-${i}`} className="flex items-start gap-2 py-1 pl-2">
             <div className={`w-4 h-4 rounded border mt-0.5 flex-shrink-0 ${checked ? "bg-primary border-primary" : "border-white/20"}`} />
-            <span className="text-foreground/80 text-sm" dangerouslySetInnerHTML={{ __html: text.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono">$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>') }} />
+            <span className="text-foreground/80 text-sm" dangerouslySetInnerHTML={{ __html: renderInline(text) }} />
           </div>
         );
         i++;
@@ -150,7 +167,7 @@ const ResourceViewer = () => {
         elements.push(
           <div key={`li-${i}`} className="flex items-start gap-2 py-1 pl-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-            <span className="text-foreground/80 text-sm" dangerouslySetInnerHTML={{ __html: text.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono">$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>') }} />
+            <span className="text-foreground/80 text-sm" dangerouslySetInnerHTML={{ __html: renderInline(text) }} />
           </div>
         );
         i++;
@@ -164,7 +181,7 @@ const ResourceViewer = () => {
           elements.push(
             <div key={`ol-${i}`} className="flex items-start gap-3 py-1 pl-2">
               <span className="text-primary font-semibold text-sm min-w-[1.5rem]">{match[1]}.</span>
-              <span className="text-foreground/80 text-sm" dangerouslySetInnerHTML={{ __html: match[2].replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono">$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>') }} />
+              <span className="text-foreground/80 text-sm" dangerouslySetInnerHTML={{ __html: renderInline(match[2]) }} />
             </div>
           );
         }
@@ -180,7 +197,7 @@ const ResourceViewer = () => {
 
       // Paragraph
       elements.push(
-        <p key={`p-${i}`} className="text-foreground/80 text-sm leading-relaxed my-2" dangerouslySetInnerHTML={{ __html: line.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono">$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>') }} />
+        <p key={`p-${i}`} className="text-foreground/80 text-sm leading-relaxed my-2" dangerouslySetInnerHTML={{ __html: renderInline(line) }} />
       );
       i++;
     }

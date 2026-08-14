@@ -41,9 +41,10 @@ class DemoAuthenticationService(AuthenticationProvider):
         self._token_expires_at: Optional[datetime] = None
 
     async def get_token(self, provided_token: Optional[str] = None) -> Optional[str]:
-        # Rule 2: Never override a real authenticated user.
-        # If a real token is provided (and not a dummy placeholder), use it directly.
-        if provided_token and provided_token != "dummy_token":
+        # Rule 2: Never override a real authenticated user. A provided token is
+        # used as-is; there is no "dummy" placeholder that secretly swaps in the
+        # demo user (that pattern was a dev backdoor and has been removed).
+        if provided_token:
             return provided_token
 
         # Rule 1: Demo Mode must remain development-only.

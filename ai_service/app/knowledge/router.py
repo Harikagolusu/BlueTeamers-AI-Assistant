@@ -7,6 +7,7 @@ from app.knowledge.dependencies import get_knowledge_pipeline
 from app.knowledge.pipeline import KnowledgeIngestionPipeline
 from app.knowledge.schemas import KnowledgeStatusResponse, KnowledgeIngestResponse
 from app.knowledge.sources import load_lesson_content, load_course_catalog
+from app.api.dependencies import require_internal_token
 
 logger = logging.getLogger("app.knowledge.router")
 
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/api/knowledge", tags=["Knowledge"])
 
 @router.get("/status", response_model=KnowledgeStatusResponse)
 async def knowledge_status(
+    _auth: bool = Depends(require_internal_token),
     pipeline: KnowledgeIngestionPipeline = Depends(get_knowledge_pipeline),
 ):
     lessons = load_lesson_content()
@@ -34,6 +36,7 @@ async def knowledge_status(
 
 @router.post("/ingest", response_model=KnowledgeIngestResponse)
 async def knowledge_ingest(
+    _auth: bool = Depends(require_internal_token),
     pipeline: KnowledgeIngestionPipeline = Depends(get_knowledge_pipeline),
 ):
     try:

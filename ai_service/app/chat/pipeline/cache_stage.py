@@ -15,12 +15,20 @@ class CacheStage(IExecutionStage):
         return "Cache"
 
     @staticmethod
-    def _key_for(query: str, language: str) -> str:
+    def _key_for(query: str, language: str, scope: str = "") -> str:
         """Namespace cached responses by explicit response language so a cached
-        English answer is never served to a request answered in, say, Telugu."""
+        English answer is never served to a request answered in, say, Telugu.
+
+        ``scope`` is the caller identity (authenticated user or guest client
+        id). Personalized responses (name, enrollments, progress) must never be
+        served to a different caller, so the scope participates in the key.
+        """
+        key = query
         if is_concrete_code(language):
-            return f"lang:{language}|{query}"
-        return query
+            key = f"lang:{language}|{query}"
+        if scope:
+            key = f"scope:{scope}|{key}"
+        return key
 
     async def execute(self, context: ExecutionContext) -> ExecutionContext:
         # Never overwrite a result produced upstream (e.g. a guardrail block).
@@ -31,7 +39,10 @@ class CacheStage(IExecutionStage):
         if not query:
             return context
 
-        key = self._key_for(query, context.metadata.get("language", ""))
+        # Identity scope: authenticated user id, else the guest client id, else
+        # anonymous. Cache hits must never cross identities.
+        scope = context.session_user or (context.metadata.get("client_id") or "") or "anon"
+        key = self._key_for(query, context.metadata.get("language", ""), scope=scope)
         cached_response = await self._cache.get(key)
         if cached_response:
             result = ExecutionResult.success(
@@ -41,5 +52,5 @@ class CacheStage(IExecutionStage):
             )
             new_metadata = {**context.metadata, "execution_result": result}
             return context.model_copy(update={"metadata": new_metadata})
-            
+
         return context

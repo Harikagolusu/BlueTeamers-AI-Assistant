@@ -12,6 +12,7 @@ import { getCourseById, Course, Lesson, Module } from "@/data/courses";
 import type { LessonContent, LabQuestion } from "@/data/lessonContent";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiUrl } from "@/services/api";
+import { safeUrl } from "@/lib/safeUrl";
 import { logActivity } from "./Dashboard";
 import { useCourseAccess } from "@/hooks/useCourseAccess";
 import { useLessonContent } from "@/hooks/useLessonContent";
@@ -918,7 +919,15 @@ const LessonViewer = () => {
     };
 
     const parseInlineFormatting = (text: string): string => {
+      // Escape HTML FIRST so raw markup in lesson content renders as text, not
+      // executable DOM (stored-XSS if content is ever attacker-editable). The
+      // markdown tokens we inject below are generated here, so they're safe.
       return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
         .replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>')
         .replace(/\*(.+?)\*/g, '<em>$1</em>')
         .replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 rounded bg-muted/50 text-primary text-sm font-mono">$1</code>');
@@ -1286,7 +1295,7 @@ const LessonViewer = () => {
                         {lessonContent.additionalResources.map((resource, idx) => (
                           <a
                             key={idx}
-                            href={resource.url || "#"}
+                            href={safeUrl(resource.url)}
                             target={resource.url ? "_blank" : undefined}
                             rel="noopener noreferrer"
                             className="flex items-center justify-between p-3 rounded-lg bg-card/30 border border-white/[0.06] hover:bg-card/50 transition-colors group"

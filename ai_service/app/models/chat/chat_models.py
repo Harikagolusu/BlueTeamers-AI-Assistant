@@ -42,7 +42,19 @@ class ExecutionResult(BaseModel):
     def failed(cls, engine: str, errors: List[Dict[str, Any]], **kwargs) -> "ExecutionResult":
         return cls(status=ExecutionStatus.FAILED, engine_name=engine, errors=errors, **kwargs)
 
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+
+# Bounds on attachment lists so an unbounded JSON body can't exhaust memory
+# before per-attachment size caps apply.
+_MAX_ATTACHMENTS = 5
+
+
+def _bounded_list(v, default=None):
+    if v is None:
+        return default
+    if len(v) > _MAX_ATTACHMENTS:
+        raise ValueError(f"A maximum of {_MAX_ATTACHMENTS} attachments are allowed.")
+    return v
 
 class ChatRequest(BaseModel):
     """Standard inbound payload for Chat API."""
@@ -52,12 +64,17 @@ class ChatRequest(BaseModel):
     query: Optional[str] = None
     stream: bool = False
     language: Optional[str] = None
-    images: Optional[List[str]] = None
-    files: Optional[List[Dict[str, Any]]] = None
+    images: Optional[List[str]] = Field(default=None, max_length=_MAX_ATTACHMENTS)
+    files: Optional[List[Dict[str, Any]]] = Field(default=None, max_length=_MAX_ATTACHMENTS)
     token: Optional[str] = None
     user_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
     client_id: Optional[str] = None
+
+    @field_validator("images", "files")
+    @classmethod
+    def cap_attachments(cls, v):
+        return _bounded_list(v)
 
     @model_validator(mode="before")
     @classmethod
@@ -69,7 +86,7 @@ class ChatRequest(BaseModel):
                 data["message"] = q
             elif m and not q:
                 data["query"] = m
-            
+
             # Ensure at least one is provided
             if not data.get("message") and not data.get("query"):
                 raise ValueError("Either 'message' or 'query' must be provided")

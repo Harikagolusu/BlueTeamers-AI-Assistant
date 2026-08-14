@@ -1,7 +1,9 @@
 import logging
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import secrets
 from typing import Optional
+
+from fastapi import Depends, HTTPException, Request, Header, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.security.auth import jwt_validator
 from app.models.authenticated_user import AuthenticatedUser
@@ -62,3 +64,30 @@ def get_assessments_api(client: DjangoClient = Depends(get_django_client)) -> As
 
 def get_certificates_api(client: DjangoClient = Depends(get_django_client)) -> CertificatesAPI:
     return CertificatesAPI(client)
+
+
+def require_internal_token(
+    request: Request,
+    x_internal_token: str = Header(default=""),
+):
+    """Gate internal/admin operations (knowledge ingest, debug endpoints).
+
+    Requires a matching INTERNAL_ADMIN_TOKEN in the ``X-Internal-Token`` header
+    (or as a Bearer token). Development mode short-circuits so local tooling
+    keeps working; production has no bypass.
+    """
+    from app.core.config import settings
+
+    configured = (settings.INTERNAL_ADMIN_TOKEN or "").strip()
+    if settings.is_development and not configured:
+        return True
+    auth = request.headers.get("authorization", "")
+    candidate = (x_internal_token or "").strip()
+    if auth.lower().startswith("bearer "):
+        candidate = auth[7:].strip()
+    if configured and candidate and secrets.compare_digest(candidate, configured):
+        return True
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Forbidden: valid internal token required.",
+    )

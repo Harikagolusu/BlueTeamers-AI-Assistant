@@ -22,10 +22,17 @@ class RecommendationEngineTool(BaseTool):
 
     async def execute(self, context: ToolContext, **kwargs) -> Any:
         skill_profile = kwargs.get("skill_profile")
-        
-        # Use dummy token; in a real app, inject user's actual JWT
-        token = "dummy_token"
-        
+
+        # Use the caller's real token when available (injected through the tool
+        # context); otherwise the engine degrades gracefully instead of
+        # impersonating a fixed demo user with a hardcoded token.
+        token = getattr(context, "token", None) or ""
+        if not token:
+            return {
+                "error": "Authentication required to fetch course recommendations.",
+                "recommendations": [],
+            }
+
         # Fetch real recommendations from Django platform
         platform_recs = await self.recommendation_service.generate_recommendations(token, "")
         

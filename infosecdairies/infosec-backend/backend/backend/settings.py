@@ -14,6 +14,7 @@ import os
 
 import dj_database_url
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 from decouple import config
 
 
@@ -49,7 +50,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config("DJANGO_SECRET_KEY", default="django-insecure-change-me-in-production")
+# Fail closed: a guessable/public default secret would let an attacker forge
+# HS256 JWTs (and CSRF/session tokens). In production a missing
+# DJANGO_SECRET_KEY aborts startup instead of falling back to the well-known
+# Django default. In development we allow the explicit dev fallback ONLY when
+# the deployment is clearly non-production (DEBUG=true).
+_SECRET_KEY = config("DJANGO_SECRET_KEY", default="").strip()
+_is_production_flag = bool(
+    config("RAILWAY_PUBLIC_DOMAIN", default="") or
+    config("RAILWAY_ENVIRONMENT", default="") or
+    not config("DEBUG", default=False, cast=bool)
+)
+if not _SECRET_KEY:
+    if _is_production_flag:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY must be set in production. Refusing to start "
+            "with a guessable default secret (HS256 JWT forgery risk)."
+        )
+    _SECRET_KEY = "django-insecure-dev-only-not-for-production"
+SECRET_KEY = _SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
@@ -110,7 +129,7 @@ SITE_ID = 2  # Use the Site with domain 127.0.0.1:8000
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # 'backend.middleware.SecurityHeadersMiddleware',  # Temporarily disabled - may be causing issues
+    'backend.middleware.SecurityHeadersMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -157,14 +176,21 @@ _railway_public_domain = config("RAILWAY_PUBLIC_DOMAIN", default="").strip()
 if _railway_public_domain:
     CSRF_TRUSTED_ORIGINS.append(f"https://{_railway_public_domain}")
 
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
-
 # Security Headers
 X_FRAME_OPTIONS = "DENY"  # Prevents clickjacking
 SECURE_CONTENT_TYPE_NOSNIFF = True  # X-Content-Type-Options: nosniff
 SECURE_BROWSER_XSS_FILTER = True  # X-XSS-Protection: 1; mode=block
 REFERRER_POLICY = "strict-origin-when-cross-origin"  # Referrer-Policy
+
+# SSL / HSTS — only in production (HTTPS terminated at the proxy). These force
+# a 301 to https and advertise HSTS to browsers.
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+if not DEBUG:
+    SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=31536000, cast=int)  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # Note: CSP and Permissions-Policy require django-csp package or custom middleware
 # Will add those next
@@ -276,15 +302,11 @@ _is_production = bool(
     not config("DEBUG", default=False, cast=bool)
 )
 if not _USE_RS256 and _is_production:
-    print(
-        "\n"
-        "╔══════════════════════════════════════════════════════════════════╗\n"
-        "║  CRITICAL: JWT_PRIVATE_KEY is not set (or is invalid).          ║\n"
-        "║  Falling back to HS256 signing. The frontend requires RS256 and  ║\n"
-        "║  ALL LOGINS WILL FAIL with 'invalid token signature'.            ║\n"
-        "║  Fix: set JWT_PRIVATE_KEY and JWT_PUBLIC_KEY as env vars.        ║\n"
-        "╚══════════════════════════════════════════════════════════════════╝\n",
-        file=_sys.stderr, flush=True,
+    raise ImproperlyConfigured(
+        "\nJWT_PRIVATE_KEY is not set (or is invalid) in production.\n"
+        "The app refuses to fall back to HS256 signing (public-default-secret\n"
+        "token forgery risk). Set JWT_PRIVATE_KEY and JWT_PUBLIC_KEY env vars\n"
+        "to a valid RSA keypair and restart.\n"
     )
 
 SIMPLE_JWT = {
@@ -296,6 +318,8 @@ SIMPLE_JWT = {
     "ALGORITHM": "RS256" if _USE_RS256 else "HS256",
     "SIGNING_KEY": _JWT_PRIVATE_KEY if _USE_RS256 else SECRET_KEY,
     "VERIFYING_KEY": _JWT_PUBLIC_KEY if _USE_RS256 else SECRET_KEY,
+    "AUDIENCE": config("JWT_AUDIENCE", default="infosecdairies"),
+    "ISSUER": config("JWT_ISSUER", default="infosecdairies"),
 }
 
 # dj-rest-auth configuration: we're using SimpleJWT tokens, not DRF Token model
@@ -333,6 +357,11 @@ CACHES = {
         "LOCATION": "infosecdairies-auth-cache",
     }
 }
+
+# Number of trusted reverse-proxy hops in front of the app. When > 0 the auth
+# throttles and rate limits extract the real client IP from X-Forwarded-For
+# (rightmost hop) instead of the shared proxy IP. Set to 1 on Railway/Vercel.
+NUM_PROXIES = config("NUM_PROXIES", default=0, cast=int)
 
 
 # Password validation
@@ -426,6 +455,15 @@ if RESEND_API_KEY:
     EMAIL_BACKEND = "backend.email_backends.ResendEmailBackend"
 elif EMAIL_HOST and EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+# Fail loud: printing OTP codes / verification links to console in production
+# (or when the effective backend is the console default with no SMTP configured)
+# would leak authentication codes to anyone with log access. Refuse to boot.
+if _is_production and EMAIL_BACKEND.endswith(".console.EmailBackend"):
+    raise ImproperlyConfigured(
+        "Production refuses to use the console email backend (OTP codes would "
+        "be printed to logs). Configure RESEND_API_KEY or SMTP env vars."
+    )
 
 print(
     "[email-config] EMAIL_BACKEND=", EMAIL_BACKEND,

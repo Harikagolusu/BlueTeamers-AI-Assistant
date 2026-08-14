@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { apiUrl } from "@/services/api";
+import { verifyJwtLocally } from "@/lib/jwtVerify";
 
 const GoogleCallback = () => {
   const navigate = useNavigate();
@@ -33,7 +34,25 @@ const GoogleCallback = () => {
           }
 
           if (access && email) {
-            login({ email, fullName, tokens: { access, refresh: refresh || undefined } });
+            try {
+              // Verify the access token locally (RS256 signature + expiry)
+              // BEFORE trusting it, and derive the identity from the signed
+              // payload rather than the attacker-controlled URL params. The
+              // signed email must match the email param to prevent a token /
+              // email mix-up in the URL.
+              const payload = await verifyJwtLocally(access);
+              if (!payload.email || payload.email.toLowerCase() !== email.toLowerCase()) {
+                throw new Error("Token email mismatch");
+              }
+              login({
+                email: payload.email,
+                fullName: payload.full_name || fullName,
+                tokens: { access, refresh: refresh || undefined },
+              });
+            } catch {
+              setError("Could not complete Google login. Please try again.");
+              return;
+            }
             const raw = sessionStorage.getItem("authRedirect") || "";
             sessionStorage.removeItem("authRedirect");
             const dest = (raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\")) ? raw : "/dashboard";

@@ -160,11 +160,14 @@ class LoginSerializer(serializers.Serializer):
         user = authenticate(request=self.context.get("request"), email=email, password=password)
         if not user:
             raise serializers.ValidationError("Invalid email or password")
-        
-        # Check if user has verified their email
+
+        # Uniform message even for unverified/inactive accounts: returning a
+        # distinct "please verify" string here lets an attacker enumerate which
+        # emails have registered accounts. Unverified users use the dedicated
+        # resend-verification-otp endpoint to complete signup.
         if not user.is_active:
-            raise serializers.ValidationError("Please verify your email before logging in. Check your inbox for the verification code.")
-        
+            raise serializers.ValidationError("Invalid email or password")
+
         attrs["user"] = user
         return attrs
 

@@ -15,6 +15,7 @@ image contents.
 """
 import base64
 import logging
+import asyncio
 from typing import Any, Dict, Optional
 
 from app.chat.interfaces.i_execution_stage import IExecutionStage
@@ -32,6 +33,16 @@ _IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff", ".tif"
 # MAX_DOCUMENT_SIZE_MB from settings but is enforced here on raw payload bytes
 # so oversized uploads never reach the PDF/OCR decoders.
 _MAX_DECODED_BYTES = 8 * 1024 * 1024  # 8 MiB per attachment
+
+# Maximum pixel count for decoded images (a ~4000x4000 image). Prevents tiny
+# crafted PNG/WebP headers declaring enormous dimensions from allocating GBs of
+# memory in cv2/PIL before we ever touch the pixel data.
+_MAX_IMAGE_PIXELS = 16_000_000  # 16 MP
+
+# Maximum number of pages extracted from a PDF and max cumulative extracted
+# characters, so a few-KB "PDF bomb" cannot expand to hundreds of MB of text.
+_MAX_PDF_PAGES = 200
+_MAX_PDF_CHARS = 200_000
 
 _ocr_engine: Any = None
 
@@ -55,6 +66,19 @@ class AttachmentParseStage(IExecutionStage):
     def name(self) -> str:
         return "AttachmentParse"
 
+    @staticmethod
+    def _sanitize_label(value: str, default: str) -> str:
+        """Sanitize a user-supplied attachment label for prompt interpolation.
+
+        Strips control characters and HTML marker bytes so a crafted ``name``
+        (e.g. ``x</attachment> ignore previous instructions ...``) cannot break
+        out of the delimiters or smuggle tags into the model's context.
+        """
+        cleaned = "".join(
+            ch for ch in value if (ch.isprintable() and ch not in "<>")
+        ).strip()
+        return (cleaned or default)[:200]
+
     async def execute(self, context: ExecutionContext) -> ExecutionContext:
         if "execution_result" in context.metadata:
             return context
@@ -68,14 +92,14 @@ class AttachmentParseStage(IExecutionStage):
         skipped_files = 0
 
         for f in files:
-            name = f.get("name") or "attachment"
+            name = self._sanitize_label(f.get("name") or "attachment", "attachment")
             ftype = (f.get("type") or "").lower()
             text = None
             if ftype.startswith("image/") or name.lower().endswith(_IMAGE_EXTS):
-                text = self._extract_image_text(f.get("content"))
+                text = await self._extract_image_text(f.get("content"))
             else:
                 try:
-                    text = self._extract_text(f)
+                    text = await self._extract_text(f)
                 except Exception as e:
                     logger.warning("Failed to parse attachment %s: %s", name, e)
                     text = None
@@ -95,7 +119,7 @@ class AttachmentParseStage(IExecutionStage):
             sections.append(f'<attachment name="{name}">\n{truncated}\n</attachment>')
 
         for idx, img in enumerate(images, 1):
-            text = self._extract_image_text(img)
+            text = await self._extract_image_text(img)
             if text:
                 parsed_files += 1
                 truncated = text[:_MAX_FILE_CHARS]
@@ -162,7 +186,7 @@ class AttachmentParseStage(IExecutionStage):
         return None
 
     @staticmethod
-    def _extract_text(f: Dict[str, Any]) -> Optional[str]:
+    async def _extract_text(f: Dict[str, Any]) -> Optional[str]:
         """Return decoded text for a file dict, or None if the type is unsupported."""
         name = (f.get("name") or "").lower()
         raw = AttachmentParseStage._decode_bytes(f.get("content"))
@@ -170,7 +194,7 @@ class AttachmentParseStage(IExecutionStage):
             return ""
 
         if name.endswith(_PDF_EXTS):
-            return AttachmentParseStage._extract_pdf(raw)
+            return await AttachmentParseStage._extract_pdf(raw)
         if name.endswith(_TEXT_EXTS) or "." not in name:
             return raw.decode("utf-8", errors="replace")
         return None
@@ -198,7 +222,7 @@ class AttachmentParseStage(IExecutionStage):
         return AttachmentParseStage._decode_bytes(content)
 
     @staticmethod
-    def _extract_image_text(content: Any) -> Optional[str]:
+    async def _extract_image_text(content: Any) -> Optional[str]:
         """Run OCR on an image and return extracted text, or None if none found."""
         raw = AttachmentParseStage._decode_image_bytes(content)
         if not raw:
@@ -206,33 +230,63 @@ class AttachmentParseStage(IExecutionStage):
         ocr = _get_ocr()
         if ocr is None:
             return None
-        try:
-            import cv2
-            import numpy as np
 
-            nparr = np.frombuffer(raw, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if img is None:
+        def _run() -> Optional[str]:
+            try:
+                import cv2
+                import numpy as np
+
+                nparr = np.frombuffer(raw, np.uint8)
+                # Decode metadata first (no pixel allocation) so a bomb image
+                # declaring huge dimensions is rejected before memory is used.
+                img = cv2.imdecode(nparr, cv2.IMREAD_REDUCED_COLOR_2)
+                if img is None:
+                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if img is None:
+                    return None
+                if img.size > _MAX_IMAGE_PIXELS:
+                    logger.warning(
+                        "Image exceeds %d pixels; rejected.", _MAX_IMAGE_PIXELS
+                    )
+                    return None
+                result, _ = ocr(img)
+                lines = [r[1] for r in (result or []) if r and len(r) > 1 and r[1]]
+                text = "\n".join(lines).strip()
+                return text or None
+            except Exception as e:
+                logger.warning("Image OCR failed: %s", e)
                 return None
-            result, _ = ocr(img)
-            lines = [r[1] for r in (result or []) if r and len(r) > 1 and r[1]]
-            text = "\n".join(lines).strip()
-            return text or None
-        except Exception as e:
-            logger.warning("Image OCR failed: %s", e)
-            return None
+
+        # CV2 decode + OCR are blocking CPU/IO; never block the event loop.
+        return await asyncio.to_thread(_run)
 
     @staticmethod
-    def _extract_pdf(raw: bytes) -> Optional[str]:
-        try:
-            from pypdf import PdfReader
-        except Exception:
-            return None
-        try:
-            reader = PdfReader(__import__("io").BytesIO(raw))
-            pages = [page.extract_text() or "" for page in reader.pages]
-            text = "\n".join(pages).strip()
-            return text or None
-        except Exception as e:
-            logger.warning("PDF text extraction failed: %s", e)
-            return None
+    async def _extract_pdf(raw: bytes) -> Optional[str]:
+        def _run() -> Optional[str]:
+            try:
+                from pypdf import PdfReader
+            except Exception:
+                return None
+            try:
+                import io
+
+                reader = PdfReader(io.BytesIO(raw))
+                parts: list[str] = []
+                total_chars = 0
+                for page in reader.pages[:_MAX_PDF_PAGES]:
+                    page_text = page.extract_text() or ""
+                    total_chars += len(page_text)
+                    if total_chars > _MAX_PDF_CHARS:
+                        # Truncate mid-extraction so a decompression bomb cannot
+                        # keep consuming memory past the cap.
+                        parts.append(page_text[:_MAX_PDF_CHARS - (total_chars - len(page_text))])
+                        logger.warning("PDF extraction truncated at %d chars.", _MAX_PDF_CHARS)
+                        break
+                    parts.append(page_text)
+                text = "\n".join(parts).strip()
+                return text or None
+            except Exception as e:
+                logger.warning("PDF text extraction failed: %s", e)
+                return None
+
+        return await asyncio.to_thread(_run)

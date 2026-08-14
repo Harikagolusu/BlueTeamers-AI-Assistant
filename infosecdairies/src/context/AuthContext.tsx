@@ -228,10 +228,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [user]);
 
-  // Sync logout across tabs
+  // Sync auth across tabs: a logout in one tab logs out all tabs, and a login
+  // in another tab forces this tab to re-initialize so it never keeps showing
+  // user A while the shared localStorage now holds user B's tokens (multi-tab
+  // identity race).
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === "userEmail" && e.newValue === null) {
+      if (e.key === "userEmail") {
+        if (e.newValue === null) {
+          setUser(null);
+        } else if (e.newValue !== localStorage.getItem("userEmail")) {
+          // Identity changed in another tab — re-read state instead of keeping
+          // a stale in-memory user.
+          window.location.reload();
+        }
+      }
+      if (e.key === "accessToken" && e.newValue === null && e.oldValue) {
         setUser(null);
       }
     };

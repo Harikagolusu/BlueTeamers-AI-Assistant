@@ -122,7 +122,17 @@ Infosec Dairies Team"""
 
 
 def get_payment_receipt_template(course_title: str, amount: str, order_id: str, payment_id: str, user_name: str) -> tuple[str, str]:
-    """Return (text_body, html_body) for payment receipt email."""
+    """Return (text_body, html_body) for payment receipt email.
+
+    All user-supplied values are HTML-escaped before interpolation so a crafted
+    ``full_name``/course title cannot inject markup or scripts into the email.
+    """
+    import html as _html
+
+    user_name = _html.escape(str(user_name))
+    course_title = _html.escape(str(course_title))
+    order_id = _html.escape(str(order_id))
+    payment_id = _html.escape(str(payment_id))
     logo_url = "https://www.infosecdairies.io/assets/infosecdairies-logo-3K6bivW-.png"
     
     text_body = f"""Payment Confirmation

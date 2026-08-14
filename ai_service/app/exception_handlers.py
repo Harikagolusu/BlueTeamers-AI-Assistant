@@ -27,9 +27,17 @@ def setup_exception_handlers(app: FastAPI):
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         log_validation_error(exc)
+        # Strip the offending ``input`` value (and any ``ctx`` detail) from the
+        # 422 response so a rejected body that happens to carry a token/secret
+        # in a wrong-typed field is never echoed back.
+        errors = []
+        for e in jsonable_encoder(exc.errors()):
+            e.pop("input", None)
+            e.pop("ctx", None)
+            errors.append(e)
         return JSONResponse(
             status_code=422,
-            content={"detail": jsonable_encoder(exc.errors())},
+            content={"detail": errors},
         )
 
     @app.exception_handler(BaseRAGException)
@@ -58,15 +66,16 @@ def setup_exception_handlers(app: FastAPI):
         logger.error(f"LLM Provider Exception: {str(exc)}", exc_info=True)
         # Configuration faults are server-side misconfigurations; provider faults are
         # transient/unavailable states. Both are surfaced as structured errors so the
-        # frontend can distinguish them from a generic 500.
+        # frontend can distinguish them from a generic 500. The raw message is never
+        # returned to the client — it may embed internal URLs/paths/secrets.
         if isinstance(exc, ProviderConfigurationException):
             return JSONResponse(
                 status_code=500,
-                content={"detail": str(exc), "code": exc.__class__.__name__},
+                content={"detail": "AI provider configuration error.", "code": "provider_configuration"},
             )
         return JSONResponse(
             status_code=503,
-            content={"detail": str(exc), "code": exc.__class__.__name__},
+            content={"detail": "The AI provider is temporarily unavailable.", "code": "provider_unavailable"},
         )
 
     @app.exception_handler(Exception)

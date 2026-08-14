@@ -38,11 +38,20 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str
     JWT_SECRET: str
+    # Shared secret for gating internal/admin operations (knowledge ingest,
+    # platform debug endpoints). Leave unset in development; REQUIRED in
+    # production so the /api/knowledge/* and /debug routes stay locked.
+    INTERNAL_ADMIN_TOKEN: Optional[str] = None
     # Path to the RS256 public key used to verify Django-issued JWTs in the
     # AI service's protected endpoints. When set and the file exists, the
     # JWTValidator accepts only RS256. Leave empty to fall back to the legacy
     # symmetric JWT_SECRET behavior.
     JWT_PUBLIC_KEY_PATH: str = ""
+    # Optional expected issuer/audience claims. When set, tokens missing or
+    # mismatching these claims are rejected (defense against cross-service
+    # token reuse). Leave empty to skip the check.
+    JWT_ISSUER: Optional[str] = None
+    JWT_AUDIENCE: Optional[str] = None
     # Resolved per mode: development -> ["*"], production -> [].
     # Production must set CORS_ORIGINS explicitly.
     CORS_ORIGINS: list[str] = []
@@ -264,6 +273,17 @@ class Settings(BaseSettings):
 
         if not self.CORS_ORIGINS:
             self.CORS_ORIGINS = ["*"] if dev else []
+
+        # Production must not run with a wildcard/empty CORS list: wildcard with
+        # credentials is rejected by browsers and empty silently breaks the API.
+        # Fail fast so the operator sets explicit origins.
+        if not dev:
+            if not self.CORS_ORIGINS or self.CORS_ORIGINS == ["*"]:
+                raise ValueError(
+                    "Production requires explicit CORS_ORIGINS (e.g. "
+                    '"https://www.infosecdairies.io,https://infosecdairies.io"). '
+                    "Wildcard or empty is not allowed with credentials."
+                )
 
         return self
 

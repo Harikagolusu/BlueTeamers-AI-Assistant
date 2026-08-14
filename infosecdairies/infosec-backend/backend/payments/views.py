@@ -162,6 +162,14 @@ def create_order(request):
 
     course_slug = request.data.get("course_slug")
     purchaser_name = request.data.get("full_name")
+    if purchaser_name is not None:
+        purchaser_name = str(purchaser_name).strip()[:100]
+        # Reject control characters / markup that would otherwise reach the
+        # payment receipt HTML email (defense in depth alongside escaping).
+        if not all(ch.isprintable() for ch in purchaser_name):
+            return Response(
+                {"detail": "full_name contains invalid characters."}, status=400
+            )
     promo_code = request.data.get("promo_code", "").strip().upper()
     country_code = _get_country_from_ip(_get_client_ip(request))
 

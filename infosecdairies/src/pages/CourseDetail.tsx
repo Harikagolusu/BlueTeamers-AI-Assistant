@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/context/AuthContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useCourseAccess } from "@/hooks/useCourseAccess";
+import { safeUrl } from "@/lib/safeUrl";
 import {
   Collapsible,
   CollapsibleContent,
@@ -1540,7 +1541,7 @@ const CourseDetail = () => {
                                 .map((resource) => (
                                   <a
                                     key={resource.id}
-                                    href={resource.url}
+                                    href={safeUrl(resource.url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="p-4 rounded-lg bg-card/30 border border-white/[0.06] flex items-center justify-between hover:bg-card/40 hover:border-primary/30 transition-colors group block"

@@ -146,15 +146,18 @@ class FreemiumService:
         status = await self.get_access_status(user_id, token, client_id)
         if not status.enabled or status.is_premium:
             return AccessDecision(allowed=True, status=status)
-        if status.remaining <= 0:
-            raise FreemiumLimitExceeded(status)
         if not user_id:
             # Fail closed: an identity-less caller must never bypass the daily
             # allowance. Callers without a validated JWT or client_id should
             # have been rejected at the API layer; if one reaches this point,
             # treat it as a denied free user rather than an unlimited one.
             raise FreemiumLimitExceeded(status)
-        used = await self._store.increment(user_id)
+        # Atomic consume: the check "used < limit" and the increment happen as a
+        # single SQL statement, so concurrent requests cannot overshoot the
+        # daily allowance (no check-then-act window).
+        used = await self._store.increment_if_under(user_id, status.limit)
+        if used is None:
+            raise FreemiumLimitExceeded(status)
         status = AccessStatus(
             access_level=status.access_level,
             is_premium=status.is_premium,

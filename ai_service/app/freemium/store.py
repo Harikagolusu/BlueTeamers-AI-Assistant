@@ -71,7 +71,14 @@ class FreemiumStore:
         return await asyncio.to_thread(_load)
 
     async def increment(self, user_id: str) -> int:
-        """Increment the user's usage counter and return the new count."""
+        """Atomically increment the user's usage counter and return the new count.
+
+        The increment itself is atomic in SQLite, but the *limit check* must be
+        part of the same statement to close the check-then-act race: concurrent
+        requests that both read ``remaining > 0`` before either writes would
+        otherwise all pass and push the counter past the configured limit.
+        Callers use :meth:`increment_if_under` for limit-aware consumption.
+        """
         def _incr():
             conn = self._connect()
             reset = self._current_reset()
@@ -92,6 +99,44 @@ class FreemiumStore:
             return int(row[_USED_KEY])
 
         return await asyncio.to_thread(_incr)
+
+    async def increment_if_under(self, user_id: str, limit: int) -> Optional[int]:
+        """Increment usage only if ``used < limit``; otherwise return None.
+
+        The check and the increment execute as ONE SQL statement so concurrent
+        requests can never overshoot the limit (no check-then-act window).
+        Returns the new ``used`` count on success, or None when the daily
+        allowance is exhausted.
+        """
+        def _try_incr():
+            conn = self._connect()
+            reset = self._current_reset()
+            # Ensure a row exists for the window, then conditionally bump it.
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO daily_usage (user_id, reset_at, used)
+                VALUES (?, ?, 0)
+                """,
+                (user_id, reset),
+            )
+            cur = conn.execute(
+                """
+                UPDATE daily_usage
+                SET used = used + 1
+                WHERE user_id = ? AND reset_at = ? AND used < ?
+                """,
+                (user_id, reset, limit),
+            )
+            conn.commit()
+            if cur.rowcount == 0:
+                return None
+            row = conn.execute(
+                "SELECT used FROM daily_usage WHERE user_id = ? AND reset_at = ?",
+                (user_id, reset),
+            ).fetchone()
+            return int(row[_USED_KEY])
+
+        return await asyncio.to_thread(_try_incr)
 
     async def reset(self, user_id: str) -> None:
         """Clear the user's usage in the current window (used on upgrade)."""

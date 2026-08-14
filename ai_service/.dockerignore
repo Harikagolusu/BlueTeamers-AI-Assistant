@@ -1,0 +1,29 @@
+# Never bake secrets or private keys into the image.
+.env
+.env.*
+!.env.example
+*.pem
+
+# Local runtime state / data
+.venv/
+data/
+vector_store/
+logs/
+*.db
+*.db-*
+test_res.json
+
+# Python / tooling caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Jupyter / misc
+.notebooks/
+.ipynb_checkpoints/

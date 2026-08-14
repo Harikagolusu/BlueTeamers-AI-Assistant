@@ -105,7 +105,7 @@ def test_chat_api_streaming_endpoint(client):
     text = response.text
     assert "Mock" in text
 
-def test_greeting_stream_preserves_newlines(client):
+def test_greeting_streams_tokens_then_done(client):
     payload = {
         "message": "hello",
         "stream": True,
@@ -115,9 +115,11 @@ def test_greeting_stream_preserves_newlines(client):
     response = client.post("/api/v1/chat/", json=payload)
     
     assert response.status_code == 200
-    # The templated greeting (no LLM) is streamed with newlines intact so the
-    # markdown structure (headings, bullets) is not flattened.
-    assert "\\n" in response.text
+    # The templated greeting (no LLM) is streamed as SSE token frames followed
+    # by a [DONE] sentinel. (The greeting itself is a single-line paragraph, so
+    # there are no embedded markdown newlines to preserve.)
+    assert "[DONE]" in response.text
+    assert '"token"' in response.text
 
 
 def test_chat_endpoint_uses_authorization_header_as_token(client):

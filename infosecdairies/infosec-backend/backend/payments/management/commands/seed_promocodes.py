@@ -1,31 +1,40 @@
+import os
+import secrets
+
 from django.core.management.base import BaseCommand
 from payments.models import PromoCode
 
 
 class Command(BaseCommand):
-    help = "Seed initial promo codes with usage limits"
+    help = "Seed promo codes with usage limits (codes configurable via env)"
 
     def handle(self, *args, **options):
-        # Define promo codes with their limits
-        promo_codes = [
-            # (code, course_slug, max_uses, is_active, discount_percent)
-            # Legacy codes for blue-team-soc-fundamentals
-            ("HEHE100", "blue-team-soc-fundamentals", 10, True, 100),
-            ("PBRVITS", "blue-team-soc-fundamentals", 10, True, 100),
-            ("FIX100", "blue-team-soc-fundamentals", 10, True, 100),
-            ("FIRST100", "blue-team-soc-fundamentals", 15, True, 100),
-            ("SOC04", "blue-team-soc-fundamentals", 17, True, 100),
-            # Per-course free codes (limit 7 each, 100% off)
-            ("BLUETEAMFREE", "blue-team-soc-fundamentals", 7, True, 100),
-            ("LOGFREE", "log-analysis", 7, True, 100),
-            ("SIEMFREE", "siem-fundamentals", 7, True, 100),
-            ("NETMONFREE", "network-security-monitoring", 7, True, 100),
-            ("IRFREE", "incident-response", 7, True, 100),
-            ("HUNTFREE", "threat-hunting", 7, True, 100),
-            ("DETECTFREE", "detection-engineering", 7, True, 100),
-            ("MALFREE", "malware-analysis", 7, True, 100),
-            ("SOCFREE", "soc-analyst-path", 7, True, 100),
-        ]
+        # Codes are configurable via the PROMO_CODES_JSON env var:
+        #   [{"code": "...", "course_slug": "...", "max_uses": 10,
+        #     "is_active": true, "discount_percent": 100}, ...]
+        # Defaults are RANDOM unguessable codes (not dictionary words) so a
+        # reader of the source cannot redeem 100%-off courses. Previously this
+        # file shipped guessable codes like HEHE100 / BLUETEAMFREE / SIEMFREE.
+        import json as _json
+
+        raw = os.getenv("PROMO_CODES_JSON", "")
+        if raw:
+            try:
+                promo_codes = [
+                    (
+                        item["code"],
+                        item["course_slug"],
+                        int(item.get("max_uses", 10)),
+                        bool(item.get("is_active", True)),
+                        int(item.get("discount_percent", 100)),
+                    )
+                    for item in _json.loads(raw)
+                ]
+            except Exception as exc:
+                self.stderr.write(f"Invalid PROMO_CODES_JSON: {exc}")
+                promo_codes = _default_codes()
+        else:
+            promo_codes = _default_codes()
 
         created_count = 0
         updated_count = 0
@@ -50,3 +59,30 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"\nDone! Created {created_count}, Updated {updated_count} promo codes."
         ))
+
+
+def _default_codes() -> list:
+    """Random unguessable 100%-off codes per course.
+
+    Generate your own for a real campaign and pass via PROMO_CODES_JSON. The
+    codes below are regenerated on every seed run from a strong RNG.
+    """
+    def _rand() -> str:
+        return "BT-" + secrets.token_hex(6).upper()
+
+    return [
+        (_rand(), "blue-team-soc-fundamentals", 10, True, 100),
+        (_rand(), "blue-team-soc-fundamentals", 10, True, 100),
+        (_rand(), "blue-team-soc-fundamentals", 10, True, 100),
+        (_rand(), "blue-team-soc-fundamentals", 15, True, 100),
+        (_rand(), "blue-team-soc-fundamentals", 17, True, 100),
+        (_rand(), "blue-team-soc-fundamentals", 7, True, 100),
+        (_rand(), "log-analysis", 7, True, 100),
+        (_rand(), "siem-fundamentals", 7, True, 100),
+        (_rand(), "network-security-monitoring", 7, True, 100),
+        (_rand(), "incident-response", 7, True, 100),
+        (_rand(), "threat-hunting", 7, True, 100),
+        (_rand(), "detection-engineering", 7, True, 100),
+        (_rand(), "malware-analysis", 7, True, 100),
+        (_rand(), "soc-analyst-path", 7, True, 100),
+    ]

@@ -51,7 +51,6 @@ def _send_email(subject: str, message: str, to_email: str, *, from_email: str, c
 
 def _jwt_for_user(user):
     from rest_framework_simplejwt.settings import api_settings as _jwt_settings
-    from django.conf import settings as _django_settings
     try:
         refresh = RefreshToken.for_user(user)
     except Exception:
@@ -75,38 +74,18 @@ def _jwt_for_user(user):
         }
     except Exception:
         # JWT signing failed — most likely a bad SIGNING_KEY (e.g. malformed RS256 key).
-        # Emergency fallback: sign with HS256 + SECRET_KEY which is always available.
+        # Do NOT silently downgrade to HS256-with-SECRET_KEY: that both breaks
+        # verification (VERIFYING_KEY differs) and introduces an HS256 forgery
+        # surface if the default secret is ever used. Fail loudly so the
+        # misconfiguration is fixed instead of papered over.
         logger.exception(
             "_jwt_for_user: JWT signing failed for %s "
-            "(algorithm=%s signing_key_set=%s) — falling back to HS256",
+            "(algorithm=%s signing_key_set=%s) — refusing to downgrade to HS256",
             getattr(user, "email", user.pk),
             _jwt_settings.ALGORITHM,
             bool(_jwt_settings.SIGNING_KEY),
         )
-        import jwt as _pyjwt
-        from datetime import datetime, timezone as _tz
-        now = datetime.now(_tz.utc)
-        secret = _django_settings.SECRET_KEY
-
-        access_payload = {
-            "token_type": "access",
-            "exp": int((now + timedelta(minutes=30)).timestamp()),
-            "iat": int(now.timestamp()),
-            "jti": secrets.token_hex(16),
-            _jwt_settings.USER_ID_CLAIM: user.pk,
-            "email": user.email,
-        }
-        refresh_payload = {
-            "token_type": "refresh",
-            "exp": int((now + timedelta(days=30)).timestamp()),
-            "iat": int(now.timestamp()),
-            "jti": secrets.token_hex(16),
-            _jwt_settings.USER_ID_CLAIM: user.pk,
-        }
-        return {
-            "access": _pyjwt.encode(access_payload, secret, algorithm="HS256"),
-            "refresh": _pyjwt.encode(refresh_payload, secret, algorithm="HS256"),
-        }
+        raise
 
 
 def _onboarding_token_for_user(user):

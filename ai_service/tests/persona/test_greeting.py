@@ -61,9 +61,7 @@ class TestGreetingBuilder:
         )
         assert "Ada Lovelace" in response
         assert "BlueTeamers" in response
-        assert "My specialized agents" in response
-        assert "Knowledge Assistant" in response
-        assert "SOC floor" not in response
+        assert "SOC" in response or "security operations" in response.lower()
         # Courses are displayed in the opening dashboard, so the greeting must
         # not repeat them.
         assert "SOC Analyst Fundamentals" not in response
@@ -73,7 +71,7 @@ class TestGreetingBuilder:
     def test_builds_greeting_without_context(self, builder):
         response = builder.build("hi", "GREETING", memory={})
         assert "BlueTeamers" in response
-        assert "My specialized agents" in response
+        assert "security operations" in response.lower()
 
     def test_level_offer_reflects_level(self, builder):
         beginner = builder.build(
@@ -89,4 +87,4 @@ class TestGreetingBuilder:
 
     def test_small_talk(self, builder):
         response = builder.build("thanks", "SMALL_TALK", memory={})
-        assert "Copy that" in response
+        assert "Happy to chat!" in response

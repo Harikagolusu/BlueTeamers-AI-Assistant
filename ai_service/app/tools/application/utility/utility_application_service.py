@@ -64,7 +64,10 @@ def _eval_ast(node: ast.AST) -> float:
         op = _BIN_OPS.get(type(node.op))
         if op is None:
             raise ValueError(f"Unsupported operator: {type(node.op).__name__}")
-        return op(_eval_ast(node.left), _eval_ast(node.right))
+        try:
+            return op(_eval_ast(node.left), _eval_ast(node.right))
+        except ZeroDivisionError:
+            raise ValueError("Division by zero is not allowed")
     if isinstance(node, ast.UnaryOp):
         op = _UNARY_OPS.get(type(node.op))
         if op is None:

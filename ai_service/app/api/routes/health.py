@@ -14,7 +14,7 @@ from app.observability.service_health import ObservabilityHealthService
 from app.observability.dependencies import get_observability_health_service
 from app.guardrails.domain.services.guardrails_service import GuardrailsService
 from app.guardrails.dependencies import get_guardrails_service
-from app.api.dependencies import get_django_client
+from app.api.dependencies import get_django_client, require_internal_token
 import httpx
 
 router = APIRouter(tags=["Health"])
@@ -36,7 +36,10 @@ async def health_check(
     )
 
 @router.get("/debug/platform-health")
-async def platform_health_check(client = Depends(get_django_client)):
+async def platform_health_check(
+    _auth: bool = Depends(require_internal_token),
+    client = Depends(get_django_client),
+):
     # Simple diagnostic check
     status = {
         "django_connection": False,

@@ -354,8 +354,6 @@ export function useChat(onNewConversation?: (id: string) => void) {
       query: text || "Analyze attached file/image",
       stream: true,
       conversation_id: convId,
-      user_id: "demo_user",
-      token: localStorage.getItem("accessToken") || undefined,
     };
 
     if (images.length > 0) payload.images = images;
@@ -425,8 +423,6 @@ export function useChat(onNewConversation?: (id: string) => void) {
       query: 'hint',
       stream: true,
       conversation_id: convId,
-      user_id: 'demo_user',
-      token: localStorage.getItem("accessToken") || undefined,
     };
     if (!localStorage.getItem("accessToken")) {
       payload.client_id = getGuestId();

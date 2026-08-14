@@ -52,10 +52,10 @@ async def test_explicit_manual_language_wins_and_persists():
 
 
 @pytest.mark.asyncio
-async def test_explicit_manual_language_yields_to_clear_lingual_query():
-    # A user pinned the selector to Hindi, but the query is clearly Tinglish
-    # ("siem ante emiti"). Auto-detection must win so the romanized question
-    # isn't answered in the wrong (forced) language.
+async def test_explicit_manual_language_always_wins():
+    # A user pinned the selector to Hindi. Even if the query is clearly
+    # Tinglish, the manual selection is honored (documented behaviour of a
+    # manual override) — it is not silently switched away from.
     store = _FakeStore(stored="hi")
     stage = LanguageContextStage(detector=_FakeDetector("te+en", 0.95), store=store)
     ctx = _context(
@@ -64,9 +64,9 @@ async def test_explicit_manual_language_yields_to_clear_lingual_query():
 
     out = await stage.execute(ctx)
 
-    assert out.memory["language"] == "te+en"
-    assert out.memory["language_source"] == "detected"
-    assert store.stored == "te+en"
+    assert out.memory["language"] == "hi"
+    assert out.memory["language_source"] == "manual"
+    assert store.stored == "hi"
 
 
 @pytest.mark.asyncio

@@ -4,6 +4,11 @@ A simple fixed-window counter keyed by the authenticated user's stable
 user_id (when a valid bearer token is present) or by client IP otherwise.
 Suitable for a single-instance deployment; swap for Redis when scaling
 horizontally.
+
+The client IP is taken from the transport peer (request.client), NOT from
+X-Forwarded-For, so a remote attacker can't rotate a spoofed header to reset
+the limit. Deployments behind a trusted proxy must configure it via
+`--forwarded-allow-ips` / proxy headers so the peer is the real client.
 """
 import time
 import threading
@@ -12,6 +17,10 @@ from typing import Dict, Tuple
 from fastapi import Request, HTTPException
 
 from app.core.config import settings
+
+# Upper bound on tracked windows to avoid an unbounded dictionary when many
+# distinct identities hit the limiter (post-auth clean-up on reset too).
+_MAX_WINDOWS = 100_000
 
 
 class FixedWindowLimiter:
@@ -22,6 +31,10 @@ class FixedWindowLimiter:
     def check(self, key: str, limit: int, window_seconds: int) -> bool:
         now = time.monotonic()
         with self._lock:
+            if len(self._windows) >= _MAX_WINDOWS:
+                # Evict the oldest-keyed entries (dict preserves insertion order).
+                for stale_key in list(self._windows)[: _MAX_WINDOWS // 10]:
+                    self._windows.pop(stale_key, None)
             start, count = self._windows.get(key, (now, 0))
             if now - start >= window_seconds:
                 start, count = now, 0
@@ -35,12 +48,21 @@ class FixedWindowLimiter:
         with self._lock:
             self._windows.pop(key, None)
 
+    def clear(self) -> None:
+        """Drop all windows. Used by tests to avoid cross-test interference."""
+        with self._lock:
+            self._windows.clear()
+
 
 _limiter = FixedWindowLimiter()
 
 
 def _client_ident(request: Request) -> str:
-    """Identify the caller: authenticated user_id if possible, else client IP."""
+    """Identify the caller: authenticated user_id if possible, else client IP.
+
+    The IP is the transport peer only — never the X-Forwarded-For header —
+    so a client cannot rotate a spoofed header to evade the limit.
+    """
     auth = request.headers.get("authorization", "")
     if auth.lower().startswith("bearer "):
         token = auth[7:].strip()
