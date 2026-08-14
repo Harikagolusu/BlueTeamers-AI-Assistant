@@ -102,10 +102,16 @@ def test_premium_user_unlimited(tmp_path, resolve_user):
     assert res.json()["is_premium"] is True
 
 
-def test_anonymous_user_not_limited_or_tracked(free_client, resolve_user):
+def test_anonymous_user_rejected_without_identity(free_client, resolve_user):
+    """Fully anonymous callers (no JWT, no client_id) are rejected with 401.
+
+    A caller that carries neither a validated token nor a guest id cannot be
+    tracked, so it must NOT be granted unlimited/untracked access (previously
+    it bypassed the free limit entirely). The chat API now fails closed.
+    """
     for i in range(10):
         res = free_client.post("/api/v1/chat/", json={"message": f"q{i}", "stream": False})
-        assert res.status_code == 200, res.text
+        assert res.status_code == 401, res.text
 
 
 def test_guest_with_client_id_is_limited(free_client, resolve_user):

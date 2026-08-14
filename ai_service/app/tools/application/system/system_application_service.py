@@ -17,13 +17,15 @@ class SystemApplicationService(BaseService, ISystemService):
         self._logger.info("Initializing SystemApplicationService")
 
     async def get_environment(self, schema: EnvironmentSchema) -> EnvironmentResult:
-        env_vars = {}
-        if not schema.keys:
-            # Safe default variables
-            safe_keys = ["PATH", "USER", "LANG", "HOME", "OS"]
-            env_vars = {k: os.environ.get(k, "") for k in safe_keys}
+        # Never dump arbitrary environment variables (they may contain secrets).
+        # Only a small allow-list of harmless variables is ever returned,
+        # regardless of what the caller requests.
+        safe_keys = ["PATH", "USER", "LANG", "HOME", "OS", "SHELL", "TERM"]
+        if schema.keys:
+            keys = [k for k in schema.keys if k in safe_keys]
         else:
-            env_vars = {k: os.environ.get(k, "") for k in schema.keys}
+            keys = safe_keys
+        env_vars = {k: os.environ.get(k, "") for k in keys}
         return EnvironmentResult(environment_variables=env_vars)
 
     def _database_config(self) -> dict:

@@ -11,6 +11,7 @@ from app.freemium.dependencies import get_freemium_service_singleton
 from app.freemium.models import AccessStatus, FreemiumLimitExceeded
 from app.freemium.service import FreemiumService
 from app.security.auth import resolve_user_identity
+from app.security.rate_limit import enforce_chat_rate_limit
 
 # In a real app we'd import get_chat_service from app.chat.dependencies
 # from app.chat.dependencies import get_chat_service
@@ -31,16 +32,24 @@ def _resolve_identity(
     """Resolve (tracking_identity, token) for freemium.
 
     - Valid JWT  -> (user_id from token, token) so premium status applies.
-    - No token but a client id (guest) -> (guest:<client_id>, None); guests are
-      always free and are rate-limited like registered free users.
-    - Neither -> (None, None); fully anonymous callers stay unlimited/untracked.
+    - No valid JWT but a client id (guest) -> (guest:<client_id>, None); guests
+      are always free and are rate-limited like registered free users. A
+      caller may present a garbage/expired token together with a client_id —
+      in that case the guest identity is used (still limited, never bypassed).
+    - Neither a valid token nor a client id -> invalid: the caller is
+      untrackable and must NOT be treated as unlimited. Raising here makes the
+      chat API fail closed instead of silently granting free rein.
     """
     if raw_token:
         user_id, _email = resolve_user_identity(raw_token)
-        return user_id, raw_token
+        if user_id:
+            return user_id, raw_token
     if client_id:
         return f"{GUEST_ID_PREFIX}{client_id}", None
-    return None, None
+    raise HTTPException(
+        status_code=401,
+        detail="Authentication required: provide a bearer token or a client_id.",
+    )
 
 
 def _request_user_id(raw_token: Optional[str]) -> Optional[str]:
@@ -94,6 +103,7 @@ async def chat_access_endpoint(
 async def chat_endpoint(
     request: ChatRequest,
     raw_token: Optional[str] = Depends(get_optional_raw_token),
+    _rate_limited: None = Depends(enforce_chat_rate_limit),
     chat_service: IChatService = Depends(get_chat_service),
     freemium_service: FreemiumService = Depends(get_freemium_service_singleton),
 ):
@@ -115,6 +125,11 @@ async def chat_endpoint(
         request.token = raw_token
 
     identity, token = _resolve_identity(raw_token, request.client_id)
+    # Never trust a client-supplied user_id: override it with the identity
+    # derived from the validated JWT (or the guest client_id) so downstream
+    # stages (assessment session keys, memory, tracking) cannot be spoofed.
+    if identity:
+        request.user_id = identity if not identity.startswith(GUEST_ID_PREFIX) else None
     try:
         await freemium_service.check_and_consume(identity, token, client_id=request.client_id)
     except FreemiumLimitExceeded as e:

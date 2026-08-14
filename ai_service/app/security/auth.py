@@ -31,9 +31,17 @@ _RS256_PUBLIC_KEY = _load_public_key()
 class JWTValidator:
     """
     Utility class to handle JWT decoding and validation securely.
+
     When an RS256 public key is configured, only asymmetric RS256 tokens
     (issued by Django) are accepted and the signature is verified with the
-    public key. Otherwise it falls back to the legacy symmetric (HS256) secret.
+    public key.
+
+    If no public key is readable, behaviour is mode-dependent:
+      - Development: falls back to the legacy symmetric (HS256) secret so
+        local tooling keeps working.
+      - Production: FAILS CLOSED — only RS256 is accepted, so any request whose
+        token cannot be verified with the configured public key is rejected.
+        A deployment must provide a readable JWT_PUBLIC_KEY_PATH.
     """
     def __init__(
         self,
@@ -42,7 +50,15 @@ class JWTValidator:
     ):
         self.secret = secret
         if algorithms is None:
-            self.algorithms = ["RS256"] if _RS256_PUBLIC_KEY else ["HS256", "RS256"]
+            if _RS256_PUBLIC_KEY:
+                self.algorithms = ["RS256"]
+            elif settings.is_development:
+                self.algorithms = ["HS256", "RS256"]
+            else:
+                # No trusted key in production: reject HS256 wholesale rather
+                # than trusting a static secret -- avoids algorithm-confusion
+                # and keeps invalid tokens from being accepted.
+                self.algorithms = ["RS256"]
         else:
             self.algorithms = algorithms
 

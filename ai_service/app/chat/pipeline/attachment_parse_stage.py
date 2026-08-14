@@ -27,6 +27,12 @@ _TEXT_EXTS = (".log", ".txt", ".csv", ".json", ".xml", ".md", ".yaml", ".yml")
 _PDF_EXTS = (".pdf",)
 _IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff", ".tif")
 
+# Hard cap on the *decoded* byte size of a single attachment (defense in depth
+# against decompression bombs / memory-exhaustion DoS). Value mirrors
+# MAX_DOCUMENT_SIZE_MB from settings but is enforced here on raw payload bytes
+# so oversized uploads never reach the PDF/OCR decoders.
+_MAX_DECODED_BYTES = 8 * 1024 * 1024  # 8 MiB per attachment
+
 _ocr_engine: Any = None
 
 
@@ -129,19 +135,30 @@ class AttachmentParseStage(IExecutionStage):
             return None
         if isinstance(content, str) and content.startswith("data:"):
             _, _, b64 = content.partition(",")
+            raw = None
             try:
-                return base64.b64decode(b64)
+                raw = base64.b64decode(b64)
             except Exception:
                 return None
+            if len(raw) > _MAX_DECODED_BYTES:
+                logger.warning("Attachment exceeds %d bytes; rejected.", _MAX_DECODED_BYTES)
+                return None
+            return raw
         if isinstance(content, str):
             try:
-                return content.encode("utf-8")
+                raw = content.encode("utf-8")
             except Exception:
                 return None
-        if isinstance(content, bytes):
-            return content
-        if isinstance(content, bytearray):
-            return bytes(content)
+            if len(raw) > _MAX_DECODED_BYTES:
+                logger.warning("Attachment exceeds %d bytes; rejected.", _MAX_DECODED_BYTES)
+                return None
+            return raw
+        if isinstance(content, (bytes, bytearray)):
+            raw = bytes(content)
+            if len(raw) > _MAX_DECODED_BYTES:
+                logger.warning("Attachment exceeds %d bytes; rejected.", _MAX_DECODED_BYTES)
+                return None
+            return raw
         return None
 
     @staticmethod
@@ -168,9 +185,16 @@ class AttachmentParseStage(IExecutionStage):
             stripped = content.strip()
             if len(stripped) >= 40 and re.fullmatch(r"[A-Za-z0-9+/=\s]+", stripped):
                 try:
-                    return base64.b64decode(stripped)
+                    raw = base64.b64decode(stripped)
                 except Exception:
                     pass
+                else:
+                    if len(raw) > _MAX_DECODED_BYTES:
+                        logger.warning(
+                            "Image attachment exceeds %d bytes; rejected.", _MAX_DECODED_BYTES
+                        )
+                        return None
+                    return raw
         return AttachmentParseStage._decode_bytes(content)
 
     @staticmethod

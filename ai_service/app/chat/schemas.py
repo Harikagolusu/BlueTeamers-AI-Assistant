@@ -11,6 +11,8 @@ class ChatRequest(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(None, description="Optional metadata filters for retrieval")
     images: Optional[List[str]] = Field(None, description="Optional base64 images")
     files: Optional[List[Dict[str, Any]]] = Field(None, description="Optional attached files")
+    client_id: Optional[str] = Field(None, description="Persistent browser guest id for anonymous callers")
+    user_id: Optional[str] = Field(None, description="Legacy client-supplied user id (ignored; identity comes from the JWT)")
 
     @field_validator('query')
     def validate_query(cls, v):

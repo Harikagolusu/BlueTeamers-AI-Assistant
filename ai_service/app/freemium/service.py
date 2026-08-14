@@ -149,7 +149,11 @@ class FreemiumService:
         if status.remaining <= 0:
             raise FreemiumLimitExceeded(status)
         if not user_id:
-            return AccessDecision(allowed=True, status=status)
+            # Fail closed: an identity-less caller must never bypass the daily
+            # allowance. Callers without a validated JWT or client_id should
+            # have been rejected at the API layer; if one reaches this point,
+            # treat it as a denied free user rather than an unlimited one.
+            raise FreemiumLimitExceeded(status)
         used = await self._store.increment(user_id)
         status = AccessStatus(
             access_level=status.access_level,

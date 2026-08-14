@@ -3,6 +3,9 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from app.api.routes.chat import router as new_chat_router
 from app.models.chat.chat_models import ChatResponse
+from app.freemium.dependencies import get_freemium_service_singleton
+from app.freemium.service import FreemiumService
+from app.freemium.store import FreemiumStore
 
 @pytest.fixture(autouse=True)
 def mock_retrieval_dependencies(monkeypatch):
@@ -44,16 +47,24 @@ def mock_llm_factory(monkeypatch):
     return mock_provider
 
 @pytest.fixture
-def client():
+def client(tmp_path):
     test_app = FastAPI()
     test_app.include_router(new_chat_router, prefix="/api/v1/chat")
+    # Per-test fresh freemium store with a generous limit so the identity check
+    # passes without cross-test usage persistence (the real singleton is a
+    # durable SQLite store that would exhaust its limit across tests).
+    store = FreemiumStore(db_path=str(tmp_path / "freemium_test.db"))
+    test_app.dependency_overrides[get_freemium_service_singleton] = lambda: FreemiumService(
+        store, platform_repo=None
+    )
     with TestClient(test_app) as test_client:
         yield test_client
 
 def test_chat_api_endpoint(client):
     payload = {
         "message": "hello",
-        "stream": False
+        "stream": False,
+        "client_id": "test-client"
     }
     
     response = client.post("/api/v1/chat/", json=payload)
@@ -67,7 +78,8 @@ def test_chat_api_endpoint(client):
 def test_chat_api_non_greeting_uses_llm(client):
     payload = {
         "message": "Tell me a fun fact about dinosaurs",
-        "stream": False
+        "stream": False,
+        "client_id": "test-client"
     }
 
     response = client.post("/api/v1/chat/", json=payload)
@@ -81,7 +93,8 @@ def test_chat_api_non_greeting_uses_llm(client):
 def test_chat_api_streaming_endpoint(client):
     payload = {
         "message": "explain the water cycle to me",
-        "stream": True
+        "stream": True,
+        "client_id": "test-client"
     }
     
     response = client.post("/api/v1/chat/", json=payload)
@@ -95,7 +108,8 @@ def test_chat_api_streaming_endpoint(client):
 def test_greeting_stream_preserves_newlines(client):
     payload = {
         "message": "hello",
-        "stream": True
+        "stream": True,
+        "client_id": "test-client"
     }
     
     response = client.post("/api/v1/chat/", json=payload)
@@ -126,7 +140,7 @@ def test_chat_endpoint_uses_authorization_header_as_token(client):
     try:
         response = client.post(
             "/api/v1/chat/",
-            json={"message": "hello", "stream": False, "conversation_id": "conv-1"},
+            json={"message": "hello", "stream": False, "conversation_id": "conv-1", "client_id": "test-client"},
             headers={"Authorization": "Bearer header-jwt"},
         )
         assert response.status_code == 200
@@ -151,7 +165,7 @@ def test_chat_endpoint_keeps_body_token_when_no_header(client):
     try:
         response = client.post(
             "/api/v1/chat/",
-            json={"message": "hello", "stream": False, "conversation_id": "conv-1", "token": "body-jwt"},
+            json={"message": "hello", "stream": False, "conversation_id": "conv-1", "token": "body-jwt", "client_id": "test-client"},
         )
         assert response.status_code == 200
         assert captured["token"] == "body-jwt"

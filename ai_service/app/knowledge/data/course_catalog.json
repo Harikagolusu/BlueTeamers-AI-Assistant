@@ -1,0 +1,2638 @@
+{
+  "blue-team-soc-fundamentals": {
+    "id": "soc-fundamentals",
+    "slug": "blue-team-soc-fundamentals",
+    "title": "Blue Team & SOC Fundamentals",
+    "shortTitle": "SOC Level 1",
+    "description": "Build your foundation as a Level 1 SOC analyst and step into the world of cybersecurity defense. This course covers the essential skills, tools, and workflows you need to detect and respond to threats effectively.",
+    "difficulty": "easy",
+    "duration": "12 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "Introduction to Security Operations",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "Welcome to the SOC",
+            "description": "Understand what a Security Operations Center is, its mission, and how it fits into an organization's security posture."
+          },
+          {
+            "id": "1.2",
+            "title": "SOC Team Roles & Responsibilities",
+            "description": "Learn about different SOC roles from L1 Analyst to SOC Manager and their daily responsibilities."
+          },
+          {
+            "id": "1.3",
+            "title": "SOC Tools & Technologies Overview",
+            "description": "Introduction to SIEM, EDR, IDS/IPS, and other essential SOC tools."
+          },
+          {
+            "id": "1.4",
+            "title": "SOC Workflows & Shift Handover",
+            "description": "Understanding ticketing systems, escalation procedures, and shift management."
+          },
+          {
+            "id": "1.5",
+            "title": "Module 1 Quiz: SOC Fundamentals",
+            "description": "Assess your understanding of SOC basics, roles, tools, and workflows before moving on."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Cyber Threat Landscape",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "Understanding Threat Actors",
+            "description": "Learn about different threat actors: nation-states, cybercriminals, hacktivists, and insiders."
+          },
+          {
+            "id": "2.2",
+            "title": "Common Attack Vectors",
+            "description": "Explore phishing, malware delivery, exploitation, and social engineering techniques."
+          },
+          {
+            "id": "2.3",
+            "title": "Malware Categories & Behavior",
+            "description": "Overview of viruses, worms, trojans, ransomware, rootkits, and their characteristics."
+          },
+          {
+            "id": "2.4",
+            "title": "Introduction to MITRE ATT&CK",
+            "description": "Understanding the ATT&CK framework and how it maps adversary behavior."
+          },
+          {
+            "id": "2.5",
+            "title": "Module 2 Quiz: Cyber Threat Landscape",
+            "description": "Test your knowledge of threat actors, attack vectors, malware types, and MITRE ATT&CK."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "Log Analysis Fundamentals",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "Why Logs Matter in Security",
+            "description": "The importance of logging for detection, investigation, and compliance."
+          },
+          {
+            "id": "3.2",
+            "title": "Windows Event Log Essentials",
+            "description": "Key Windows Event IDs: 4624, 4625, 4688, 4720, 4732, and their significance."
+          },
+          {
+            "id": "3.3",
+            "title": "Linux Log Analysis Basics",
+            "description": "Understanding auth.log, syslog, and secure logs for threat detection."
+          },
+          {
+            "id": "3.4",
+            "title": "Network Device Logs",
+            "description": "Analyzing firewall, proxy, and DNS logs for suspicious activity."
+          },
+          {
+            "id": "3.5",
+            "title": "Hands-On: Log Analysis Challenge",
+            "description": "Practice identifying malicious activity in sample log files."
+          },
+          {
+            "id": "3.6",
+            "title": "Module 3 Quiz: Log Analysis Fundamentals",
+            "description": "Test your knowledge of Windows, Linux, and network log analysis concepts."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "SIEM Fundamentals",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "What is a SIEM?",
+            "description": "Understanding SIEM architecture, data flow, and core capabilities."
+          },
+          {
+            "id": "4.2",
+            "title": "SIEM Navigation & Interface",
+            "description": "Learning to navigate dashboards, search interfaces, and alert queues."
+          },
+          {
+            "id": "4.3",
+            "title": "Basic Search Queries",
+            "description": "Writing simple queries to find specific events and patterns."
+          },
+          {
+            "id": "4.4",
+            "title": "Correlation Rules & Alerts",
+            "description": "How SIEM correlates events and generates security alerts."
+          },
+          {
+            "id": "4.5",
+            "title": "Hands-On: SIEM Investigation Lab",
+            "description": "Practice investigating alerts using a SIEM platform."
+          },
+          {
+            "id": "4.6",
+            "title": "Module 4 Quiz: SIEM Fundamentals",
+            "description": "Test your SIEM knowledge including navigation, queries, correlation rules, and alerts."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Alert Triage & Analysis",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "Understanding Security Alerts",
+            "description": "Alert anatomy, severity levels, and initial assessment techniques."
+          },
+          {
+            "id": "5.2",
+            "title": "The Triage Process",
+            "description": "Step-by-step methodology for efficient alert triage."
+          },
+          {
+            "id": "5.3",
+            "title": "True Positive vs False Positive",
+            "description": "Techniques to distinguish real threats from noise."
+          },
+          {
+            "id": "5.4",
+            "title": "Enrichment & Context Gathering",
+            "description": "Using threat intel, reputation services, and context to validate alerts."
+          },
+          {
+            "id": "5.5",
+            "title": "Documentation & Escalation",
+            "description": "Proper alert documentation and when/how to escalate."
+          },
+          {
+            "id": "5.6",
+            "title": "Module 5 Quiz: Alert Triage & Analysis",
+            "description": "Test your understanding of alert triage, true/false positive analysis, and escalation procedures."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Threat Intelligence Basics",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "Introduction to Threat Intelligence",
+            "description": "What is threat intel and how SOC analysts use it."
+          },
+          {
+            "id": "6.2",
+            "title": "IOC Types & Usage",
+            "description": "Understanding IPs, domains, hashes, URLs, and how to leverage them."
+          },
+          {
+            "id": "6.3",
+            "title": "OSINT for SOC Analysts",
+            "description": "Free tools and techniques for threat research."
+          },
+          {
+            "id": "6.4",
+            "title": "Threat Intel Platforms",
+            "description": "Overview of VirusTotal, AbuseIPDB, Shodan, and other resources."
+          },
+          {
+            "id": "6.5",
+            "title": "Hands-On: Threat Intelligence Challenge",
+            "description": "Apply your threat intelligence knowledge in a practical scenario."
+          },
+          {
+            "id": "6.6",
+            "title": "Module 6 Quiz: Threat Intelligence",
+            "description": "Test your understanding of threat intelligence concepts, IOCs, OSINT, and intel platforms."
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "title": "Incident Response Introduction",
+        "lessons": [
+          {
+            "id": "7.1",
+            "title": "Incident Response Lifecycle",
+            "description": "NIST framework: Preparation, Detection, Containment, Eradication, Recovery, Lessons Learned."
+          },
+          {
+            "id": "7.2",
+            "title": "Incident Classification & Severity",
+            "description": "How to classify incidents and determine priority."
+          },
+          {
+            "id": "7.3",
+            "title": "Initial Containment Actions",
+            "description": "First response actions for common incident types."
+          },
+          {
+            "id": "7.4",
+            "title": "Incident Documentation",
+            "description": "Creating effective incident tickets and reports."
+          },
+          {
+            "id": "7.5",
+            "title": "Hands-On: Phishing Incident Response",
+            "description": "Walk through a complete phishing incident from detection to resolution."
+          },
+          {
+            "id": "7.6",
+            "title": "Module 7 Quiz: Incident Response",
+            "description": "Test your understanding of the incident response lifecycle, classification, containment, and documentation."
+          }
+        ]
+      },
+      {
+        "id": "8",
+        "title": "Endpoint Detection & Response",
+        "lessons": [
+          {
+            "id": "8.1",
+            "title": "What is EDR?",
+            "description": "Understanding endpoint detection and response technology."
+          },
+          {
+            "id": "8.2",
+            "title": "EDR Alerts & Telemetry",
+            "description": "Types of EDR alerts and endpoint telemetry data."
+          },
+          {
+            "id": "8.3",
+            "title": "Process Analysis Basics",
+            "description": "Understanding process trees, parent-child relationships, and suspicious behavior."
+          },
+          {
+            "id": "8.4",
+            "title": "Hands-On: EDR Investigation",
+            "description": "Practice investigating EDR alerts in a simulated environment."
+          },
+          {
+            "id": "8.5",
+            "title": "Module 8 Quiz: Endpoint Detection & Response",
+            "description": "Assess your knowledge of EDR concepts, telemetry, and investigation workflows."
+          }
+        ]
+      },
+      {
+        "id": "9",
+        "title": "Network Security Monitoring",
+        "lessons": [
+          {
+            "id": "9.1",
+            "title": "Network Security Fundamentals",
+            "description": "OSI model, TCP/IP, and network security concepts for SOC analysts."
+          },
+          {
+            "id": "9.2",
+            "title": "IDS/IPS Basics",
+            "description": "Understanding intrusion detection and prevention systems."
+          },
+          {
+            "id": "9.3",
+            "title": "Network Traffic Analysis",
+            "description": "Basics of analyzing network flows and packet captures."
+          },
+          {
+            "id": "9.4",
+            "title": "Common Network Attacks",
+            "description": "Recognizing port scans, C2 traffic, data exfiltration, and lateral movement."
+          },
+          {
+            "id": "9.5",
+            "title": "Module 9 Quiz: Network Security Monitoring",
+            "description": "Evaluate your understanding of network monitoring fundamentals and common attack patterns."
+          }
+        ]
+      },
+      {
+        "id": "10",
+        "title": "SOC Analyst Best Practices",
+        "lessons": [
+          {
+            "id": "10.1",
+            "title": "Building Investigation Skills",
+            "description": "Developing critical thinking and analytical mindset."
+          },
+          {
+            "id": "10.2",
+            "title": "Avoiding Analyst Burnout",
+            "description": "Mental health, work-life balance, and career sustainability."
+          },
+          {
+            "id": "10.3",
+            "title": "Continuous Learning Path",
+            "description": "Certifications, communities, and resources for career growth."
+          },
+          {
+            "id": "10.4",
+            "title": "Final Quiz: SOC Analyst Certification",
+            "description": "Comprehensive final assessment covering all SOC Level 1 modules before certification."
+          },
+          {
+            "id": "10.5",
+            "title": "Course Summary & Next Steps",
+            "description": "Review key concepts and prepare for advanced training."
+          }
+        ]
+      }
+    ]
+  },
+  "log-analysis-for-beginners": {
+    "id": "log-analysis",
+    "slug": "log-analysis-for-beginners",
+    "title": "Log Analysis for Beginners",
+    "shortTitle": "Log Analysis",
+    "description": "Start your journey into log analysis. Learn to read, parse, and understand security logs from various sources including Windows, Linux, and network devices.",
+    "difficulty": "easy",
+    "duration": "8 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "Introduction to Security Logs",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "What are Security Logs?",
+            "description": "Understanding what logs are, why they matter for security, and how they help detect threats."
+          },
+          {
+            "id": "1.2",
+            "title": "Common Log Formats",
+            "description": "Learn about Syslog, CEF, JSON, CSV, and other standard log formats used in security."
+          },
+          {
+            "id": "1.3",
+            "title": "Log Sources Overview",
+            "description": "Explore different log sources: endpoints, servers, network devices, applications, and cloud services."
+          },
+          {
+            "id": "1.4",
+            "title": "Log Collection & Centralization",
+            "description": "How logs are collected, forwarded, and centralized for analysis in a SIEM."
+          },
+          {
+            "id": "1.5",
+            "title": "Module 1 Quiz: Log Fundamentals",
+            "description": "Test your understanding of log basics, formats, and collection methods."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Windows Event Logs",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "Windows Event Log Architecture",
+            "description": "Understanding Windows Event Log structure, channels, and the Event Viewer tool."
+          },
+          {
+            "id": "2.2",
+            "title": "Critical Security Event IDs",
+            "description": "Deep dive into Event IDs 4624, 4625, 4688, 4720, 4732, 4768, 4769, and more."
+          },
+          {
+            "id": "2.3",
+            "title": "Authentication & Logon Analysis",
+            "description": "Analyzing logon types, authentication protocols, and detecting suspicious login patterns."
+          },
+          {
+            "id": "2.4",
+            "title": "Process & Command Line Logging",
+            "description": "Understanding Event ID 4688, Sysmon, and command-line auditing for threat detection."
+          },
+          {
+            "id": "2.5",
+            "title": "PowerShell Logging",
+            "description": "Module, Script Block, and Transcription logging for detecting malicious PowerShell."
+          },
+          {
+            "id": "2.6",
+            "title": "Hands-On: Windows Log Investigation",
+            "description": "Practice identifying suspicious activity in Windows event logs."
+          },
+          {
+            "id": "2.7",
+            "title": "Module 2 Quiz: Windows Event Log Mastery",
+            "description": "Assess your knowledge of Windows Event IDs and log analysis."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "Linux System Logs",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "Linux Logging Architecture",
+            "description": "Understanding syslog, rsyslog, journald, and the /var/log directory structure."
+          },
+          {
+            "id": "3.2",
+            "title": "Authentication Logs (auth.log/secure)",
+            "description": "Analyzing SSH logins, sudo usage, PAM events, and failed authentication attempts."
+          },
+          {
+            "id": "3.3",
+            "title": "System & Application Logs",
+            "description": "Working with syslog, kern.log, daemon.log, and application-specific logs."
+          },
+          {
+            "id": "3.4",
+            "title": "Web Server Logs (Apache/Nginx)",
+            "description": "Parsing access and error logs, detecting web attacks and suspicious requests."
+          },
+          {
+            "id": "3.5",
+            "title": "Hands-On: Linux Log Analysis Challenge",
+            "description": "Investigate a simulated breach using only Linux log files."
+          },
+          {
+            "id": "3.6",
+            "title": "Module 3 Quiz: Linux & Network Logs",
+            "description": "Practical quiz on Linux system, auth, and network device logs."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "Network Device Logs",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "Firewall Log Analysis",
+            "description": "Understanding firewall log formats, allow/deny decisions, and traffic patterns."
+          },
+          {
+            "id": "4.2",
+            "title": "Proxy & Web Gateway Logs",
+            "description": "Analyzing HTTP/HTTPS traffic, user agents, and detecting C2 communications."
+          },
+          {
+            "id": "4.3",
+            "title": "DNS Query Logs",
+            "description": "Detecting DNS tunneling, DGA domains, and suspicious DNS queries."
+          },
+          {
+            "id": "4.4",
+            "title": "VPN & Remote Access Logs",
+            "description": "Monitoring VPN connections, geographic anomalies, and unauthorized access."
+          },
+          {
+            "id": "4.5",
+            "title": "Module 4 Quiz: Network Log Analysis",
+            "description": "Test your skills on firewall, proxy, DNS, and VPN log analysis."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Log Analysis Techniques",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "Pattern Recognition & Baseline",
+            "description": "Establishing normal baselines and identifying deviations."
+          },
+          {
+            "id": "5.2",
+            "title": "Timeline Reconstruction",
+            "description": "Building chronological timelines from multiple log sources."
+          },
+          {
+            "id": "5.3",
+            "title": "Correlation Across Sources",
+            "description": "Connecting events from different logs to see the full picture."
+          },
+          {
+            "id": "5.4",
+            "title": "Command Line Tools for Logs",
+            "description": "Using grep, awk, sed, cut, and other CLI tools for log analysis."
+          },
+          {
+            "id": "5.5",
+            "title": "Module 5 Quiz: Log Analysis Techniques",
+            "description": "Assess your pattern recognition, timeline, and correlation skills."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Practical Log Analysis",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "Detecting Brute Force Attacks",
+            "description": "Identifying password spraying and brute force patterns in logs."
+          },
+          {
+            "id": "6.2",
+            "title": "Detecting Lateral Movement",
+            "description": "Finding signs of attackers moving through the network."
+          },
+          {
+            "id": "6.3",
+            "title": "Detecting Data Exfiltration",
+            "description": "Identifying unusual data transfers and potential data theft."
+          },
+          {
+            "id": "6.4",
+            "title": "Final Practical Challenge",
+            "description": "Complete investigation scenario using all log analysis skills."
+          },
+          {
+            "id": "6.5",
+            "title": "Final Certification Exam",
+            "description": "Comprehensive exam covering all log analysis modules."
+          }
+        ]
+      }
+    ]
+  },
+  "siem-fundamentals": {
+    "id": "siem-fundamentals",
+    "slug": "siem-fundamentals",
+    "title": "SIEM Fundamentals",
+    "shortTitle": "SIEM Basics",
+    "description": "Master Security Information and Event Management basics. Learn to navigate and understand modern SIEM platforms, create queries, build dashboards, and respond to alerts effectively.",
+    "difficulty": "easy",
+    "duration": "10 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "Introduction to SIEM",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "What is SIEM?",
+            "description": "Understanding SIEM technology, its purpose, and how it fits into modern security operations."
+          },
+          {
+            "id": "1.2",
+            "title": "SIEM Architecture & Components",
+            "description": "Learn about data collectors, indexers, search heads, and the data flow in SIEM platforms."
+          },
+          {
+            "id": "1.3",
+            "title": "Popular SIEM Platforms Overview",
+            "description": "Compare Splunk, Microsoft Sentinel, Elastic SIEM, QRadar, and other major platforms."
+          },
+          {
+            "id": "1.4",
+            "title": "SIEM Use Cases in Security",
+            "description": "Real-world applications: threat detection, compliance, incident response, and forensics."
+          },
+          {
+            "id": "siem-q1",
+            "title": "Module 1 Quiz: SIEM Fundamentals",
+            "description": "Test your understanding of SIEM architecture, components, and basic concepts."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Data Ingestion & Management",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "Log Collection Methods",
+            "description": "Agent-based vs agentless collection, syslog, API integrations, and forwarders."
+          },
+          {
+            "id": "2.2",
+            "title": "Data Normalization & Parsing",
+            "description": "Converting raw logs into structured, searchable data with field extraction."
+          },
+          {
+            "id": "2.3",
+            "title": "Data Sources & Indexing",
+            "description": "Understanding indexes, source types, and how data is organized for efficient searching."
+          },
+          {
+            "id": "2.4",
+            "title": "Data Retention & Storage",
+            "description": "Managing data lifecycle, hot/warm/cold storage tiers, and compliance requirements."
+          },
+          {
+            "id": "siem-q2",
+            "title": "Module 2 Quiz: Data Ingestion Assessment",
+            "description": "Evaluate your knowledge of log collection, normalization, and data management."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "Search & Query Fundamentals",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "Basic Search Syntax",
+            "description": "Writing your first SIEM queries, using keywords, and understanding search modes."
+          },
+          {
+            "id": "3.2",
+            "title": "Filtering & Field Extraction",
+            "description": "Narrowing results with filters, boolean operators, and extracting specific fields."
+          },
+          {
+            "id": "3.3",
+            "title": "Time Range & Wildcards",
+            "description": "Searching across time periods, using wildcards, and optimizing search performance."
+          },
+          {
+            "id": "3.4",
+            "title": "Hands-On: Basic Search Lab",
+            "description": "Practice writing queries to find specific security events in sample data."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "Advanced Query Techniques",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "Aggregation & Statistics",
+            "description": "Using stats, count, sum, avg, and other aggregation commands for analysis."
+          },
+          {
+            "id": "4.2",
+            "title": "Joins & Lookups",
+            "description": "Combining data from multiple sources and enriching events with lookup tables."
+          },
+          {
+            "id": "4.3",
+            "title": "Subsearches & Transactions",
+            "description": "Building complex queries with nested searches and grouping related events."
+          },
+          {
+            "id": "4.4",
+            "title": "Hands-On: Advanced Query Lab",
+            "description": "Create complex queries to investigate a simulated security incident."
+          },
+          {
+            "id": "siem-q3",
+            "title": "Module 4 Quiz: Search & Query Mastery",
+            "description": "Practical quiz on writing SIEM queries and search techniques."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Dashboards & Visualization",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "Dashboard Fundamentals",
+            "description": "Creating effective security dashboards with charts, tables, and single value panels."
+          },
+          {
+            "id": "5.2",
+            "title": "Visualization Types",
+            "description": "Choosing the right chart: line, bar, pie, heatmaps, and geographic maps."
+          },
+          {
+            "id": "5.3",
+            "title": "Interactive Dashboards",
+            "description": "Adding drill-downs, filters, time pickers, and dynamic inputs to dashboards."
+          },
+          {
+            "id": "5.4",
+            "title": "Hands-On: Build a SOC Dashboard",
+            "description": "Create a functional security operations dashboard from scratch."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Alerts & Correlation Rules",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "Understanding SIEM Alerts",
+            "description": "How alerts are generated, severity levels, and alert fatigue management."
+          },
+          {
+            "id": "6.2",
+            "title": "Creating Detection Rules",
+            "description": "Building correlation rules to detect suspicious patterns and behaviors."
+          },
+          {
+            "id": "6.3",
+            "title": "Alert Tuning & Optimization",
+            "description": "Reducing false positives and improving detection accuracy over time."
+          },
+          {
+            "id": "6.4",
+            "title": "Alert Response Actions",
+            "description": "Configuring notifications, automated responses, and escalation workflows."
+          },
+          {
+            "id": "siem-q4",
+            "title": "Module 6 Quiz: Dashboards & Alerts",
+            "description": "Test your skills on visualization, dashboards, and alert configuration."
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "title": "Practical SIEM Operations",
+        "lessons": [
+          {
+            "id": "7.1",
+            "title": "Alert Triage Workflow",
+            "description": "Step-by-step process for investigating and responding to SIEM alerts."
+          },
+          {
+            "id": "7.2",
+            "title": "Investigation Techniques",
+            "description": "Using SIEM to pivot, correlate, and build investigation timelines."
+          },
+          {
+            "id": "7.3",
+            "title": "SIEM Best Practices",
+            "description": "Tips for effective SIEM usage, query optimization, and daily operations."
+          },
+          {
+            "id": "7.4",
+            "title": "Final Practical Challenge",
+            "description": "Complete a full investigation scenario using all learned SIEM skills."
+          },
+          {
+            "id": "siem-q5",
+            "title": "Final Certification Exam: SIEM Fundamentals",
+            "description": "Comprehensive exam covering all SIEM fundamentals modules. Required for certification."
+          }
+        ]
+      }
+    ]
+  },
+  "network-security-monitoring": {
+    "id": "network-security-monitoring",
+    "slug": "network-security-monitoring",
+    "title": "Network Security Monitoring",
+    "shortTitle": "NSM",
+    "description": "Master deep packet inspection, network-based threat detection, and traffic analysis. Learn to use tools like Zeek, Suricata, and Wireshark to identify malicious activity on the wire.",
+    "difficulty": "medium",
+    "duration": "14 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "NSM Foundations",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "What is Network Security Monitoring?",
+            "description": "Understanding NSM philosophy, goals, and how it complements endpoint detection."
+          },
+          {
+            "id": "1.2",
+            "title": "Network Protocols Deep Dive",
+            "description": "TCP/IP, UDP, DNS, HTTP/S, and other protocols from a security perspective."
+          },
+          {
+            "id": "1.3",
+            "title": "The OSI Model for Defenders",
+            "description": "How each OSI layer exposes different attack surfaces and detection opportunities."
+          },
+          {
+            "id": "1.4",
+            "title": "NSM Architecture & Sensor Placement",
+            "description": "Designing network tap points, SPAN ports, and sensor deployment strategies."
+          },
+          {
+            "id": "1.5",
+            "title": "Module 1 Quiz: NSM Foundations",
+            "description": "Test your knowledge of NSM philosophy, network protocols, OSI model, and sensor placement."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Packet Capture & Analysis",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "Introduction to Wireshark",
+            "description": "Navigating the Wireshark interface, capture filters, and display filters."
+          },
+          {
+            "id": "2.2",
+            "title": "TCP Stream Analysis",
+            "description": "Following TCP conversations, identifying retransmissions, and session reconstruction."
+          },
+          {
+            "id": "2.3",
+            "title": "DNS Traffic Analysis",
+            "description": "Detecting DNS tunneling, DGA domains, and suspicious query patterns."
+          },
+          {
+            "id": "2.4",
+            "title": "HTTP/HTTPS Traffic Inspection",
+            "description": "Analyzing web traffic, extracting files, and identifying malicious payloads."
+          },
+          {
+            "id": "2.5",
+            "title": "Hands-On: PCAP Analysis Lab",
+            "description": "Investigate real-world attack PCAPs to identify malicious activity."
+          },
+          {
+            "id": "2.6",
+            "title": "Module 2 Quiz: Packet Capture & Analysis",
+            "description": "Assess your Wireshark skills, TCP stream analysis, DNS and HTTP traffic inspection."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "Intrusion Detection with Suricata",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "Suricata Architecture & Setup",
+            "description": "Installing and configuring Suricata as an IDS/IPS engine."
+          },
+          {
+            "id": "3.2",
+            "title": "Writing Suricata Rules",
+            "description": "Rule syntax, content matching, flow keywords, and protocol-specific options."
+          },
+          {
+            "id": "3.3",
+            "title": "Alert Management & Tuning",
+            "description": "Managing alert output, suppressing false positives, and threshold configuration."
+          },
+          {
+            "id": "3.4",
+            "title": "Hands-On: Custom Detection Rules",
+            "description": "Write and test Suricata rules to detect specific attack patterns."
+          },
+          {
+            "id": "3.5",
+            "title": "Module 3 Quiz: Intrusion Detection with Suricata",
+            "description": "Evaluate your understanding of Suricata architecture, rule writing, and alert tuning."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "Network Metadata with Zeek",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "Introduction to Zeek",
+            "description": "Understanding Zeek's role in NSM and its log-based approach to network analysis."
+          },
+          {
+            "id": "4.2",
+            "title": "Zeek Log Types",
+            "description": "Exploring conn.log, dns.log, http.log, ssl.log, files.log, and other key logs."
+          },
+          {
+            "id": "4.3",
+            "title": "Threat Hunting with Zeek Logs",
+            "description": "Using Zeek metadata to detect C2 beacons, lateral movement, and exfiltration."
+          },
+          {
+            "id": "4.4",
+            "title": "Zeek Scripting Basics",
+            "description": "Writing simple Zeek scripts to create custom detections and log enrichments."
+          },
+          {
+            "id": "4.5",
+            "title": "Module 4 Quiz: Network Metadata with Zeek",
+            "description": "Test your knowledge of Zeek logs, threat hunting with metadata, and Zeek scripting."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Network Attack Detection",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "Detecting Reconnaissance",
+            "description": "Identifying port scans, service enumeration, and network mapping attempts."
+          },
+          {
+            "id": "5.2",
+            "title": "Detecting Command & Control",
+            "description": "Recognizing C2 beaconing patterns, encrypted channels, and covert communications."
+          },
+          {
+            "id": "5.3",
+            "title": "Detecting Lateral Movement",
+            "description": "Spotting SMB abuse, RDP pivoting, PsExec, and pass-the-hash on the network."
+          },
+          {
+            "id": "5.4",
+            "title": "Detecting Data Exfiltration",
+            "description": "Identifying large transfers, DNS exfil, steganography, and protocol tunneling."
+          },
+          {
+            "id": "5.5",
+            "title": "Module 5 Quiz: Network Attack Detection",
+            "description": "Assess your ability to detect reconnaissance, C2, lateral movement, and exfiltration."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Practical NSM Operations",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "Building an NSM Workflow",
+            "description": "Integrating Zeek, Suricata, and SIEM for a complete monitoring pipeline."
+          },
+          {
+            "id": "6.2",
+            "title": "Network Forensics Basics",
+            "description": "Evidence preservation, timeline construction, and reporting from network data."
+          },
+          {
+            "id": "6.3",
+            "title": "NSM Best Practices",
+            "description": "Sensor maintenance, rule updates, and operational efficiency tips."
+          },
+          {
+            "id": "6.4",
+            "title": "Final Practical Challenge",
+            "description": "Investigate a multi-stage network intrusion using all NSM tools and techniques."
+          },
+          {
+            "id": "6.5",
+            "title": "Module 6 Quiz: Practical NSM Operations",
+            "description": "Evaluate your understanding of NSM workflows, network forensics, and best practices."
+          }
+        ]
+      }
+    ]
+  },
+  "incident-response-fundamentals": {
+    "id": "incident-response",
+    "slug": "incident-response-fundamentals",
+    "title": "Incident Response Fundamentals",
+    "shortTitle": "Incident Response",
+    "description": "Learn the complete incident response lifecycle. Master containment, eradication, recovery, and post-incident analysis procedures used by IR professionals.",
+    "difficulty": "medium",
+    "duration": "12 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "IR Foundations & Frameworks",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "What is Incident Response?",
+            "description": "Defining incidents, events, and the role of IR in modern cybersecurity."
+          },
+          {
+            "id": "1.2",
+            "title": "NIST IR Lifecycle",
+            "description": "Preparation, Detection & Analysis, Containment, Eradication & Recovery, Post-Incident."
+          },
+          {
+            "id": "1.3",
+            "title": "SANS PICERL Framework",
+            "description": "Comparing the SANS six-phase model with NIST and understanding when to use each."
+          },
+          {
+            "id": "1.4",
+            "title": "Building an IR Team",
+            "description": "Roles, responsibilities, RACI matrices, and cross-functional coordination."
+          },
+          {
+            "id": "ir-q1",
+            "title": "Module 1 Quiz: IR Foundations & Frameworks",
+            "description": "Test your knowledge of incident response fundamentals, lifecycle models, and IR team structure."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Preparation & Readiness",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "IR Policy & Plan Development",
+            "description": "Crafting incident response policies, playbooks, and escalation procedures."
+          },
+          {
+            "id": "2.2",
+            "title": "Communication Plans",
+            "description": "Internal notifications, external disclosure, legal obligations, and media handling."
+          },
+          {
+            "id": "2.3",
+            "title": "IR Toolkit & Jump Bag",
+            "description": "Essential tools, forensic hardware, and software for rapid deployment."
+          },
+          {
+            "id": "2.4",
+            "title": "Tabletop Exercises",
+            "description": "Designing and running tabletop scenarios to test IR readiness."
+          },
+          {
+            "id": "ir-q2",
+            "title": "Module 2 Quiz: Preparation & Readiness",
+            "description": "Test your knowledge of IR planning, communication, toolkit preparation, and tabletop exercises."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "Detection & Analysis",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "Incident Detection Sources",
+            "description": "SIEM alerts, EDR detections, user reports, threat intelligence feeds."
+          },
+          {
+            "id": "3.2",
+            "title": "Incident Triage & Prioritization",
+            "description": "Severity classification, impact assessment, and resource allocation."
+          },
+          {
+            "id": "3.3",
+            "title": "Indicator Analysis",
+            "description": "Analyzing IOCs, correlating events, and building attack timelines."
+          },
+          {
+            "id": "3.4",
+            "title": "Root Cause Analysis Techniques",
+            "description": "The 5 Whys, fishbone diagrams, and fault tree analysis for incidents."
+          },
+          {
+            "id": "ir-q3",
+            "title": "Module 3 Quiz: Detection & Analysis",
+            "description": "Test your understanding of detection sources, triage, indicator analysis, and root cause analysis."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "Containment Strategies",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "Short-Term Containment",
+            "description": "Network isolation, port blocking, DNS sinkholes, and immediate threat neutralization."
+          },
+          {
+            "id": "4.2",
+            "title": "Long-Term Containment",
+            "description": "System reimaging, account lockdowns, credential rotation, and segmentation."
+          },
+          {
+            "id": "4.3",
+            "title": "Evidence Preservation",
+            "description": "Chain of custody, memory acquisition, disk imaging, and log preservation."
+          },
+          {
+            "id": "4.4",
+            "title": "Containment Decision Framework",
+            "description": "Balancing business continuity with security—when to isolate vs. monitor."
+          },
+          {
+            "id": "ir-q4",
+            "title": "Module 4 Quiz: Containment Strategies",
+            "description": "Test your knowledge of containment, evidence preservation, and decision-making frameworks."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Eradication & Recovery",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "Malware Removal & Cleanup",
+            "description": "Removing persistence mechanisms, backdoors, and malicious artifacts."
+          },
+          {
+            "id": "5.2",
+            "title": "System Restoration",
+            "description": "Rebuilding from clean images, patching vulnerabilities, and hardening configurations."
+          },
+          {
+            "id": "5.3",
+            "title": "Validation & Monitoring",
+            "description": "Verifying eradication success and implementing enhanced monitoring post-recovery."
+          },
+          {
+            "id": "5.4",
+            "title": "Business Resumption",
+            "description": "Phased recovery, user communication, and service restoration procedures."
+          },
+          {
+            "id": "ir-q5",
+            "title": "Module 5 Quiz: Eradication & Recovery",
+            "description": "Test your knowledge of malware removal, system restoration, validation, and business resumption."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Post-Incident Activities",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "Lessons Learned Meetings",
+            "description": "Facilitating blameless post-mortems and extracting actionable improvements."
+          },
+          {
+            "id": "6.2",
+            "title": "Incident Report Writing",
+            "description": "Executive summaries, technical findings, timeline documentation, and recommendations."
+          },
+          {
+            "id": "6.3",
+            "title": "Metrics & KPIs",
+            "description": "MTTD, MTTR, dwell time, and other metrics for measuring IR effectiveness."
+          },
+          {
+            "id": "6.4",
+            "title": "Continuous Improvement",
+            "description": "Updating playbooks, tuning detections, and feeding lessons into the preparation phase."
+          },
+          {
+            "id": "ir-q6",
+            "title": "Module 6 Quiz: Post-Incident Activities",
+            "description": "Test your knowledge of lessons learned, report writing, metrics, and continuous improvement."
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "title": "IR Certification Exam",
+        "lessons": [
+          {
+            "id": "ir-q7",
+            "title": "Final Certification Exam: Incident Response",
+            "description": "Comprehensive final exam covering all modules. You must pass with 80% or higher to earn your certificate."
+          }
+        ]
+      }
+    ]
+  },
+  "threat-hunting-fundamentals": {
+    "id": "threat-hunting",
+    "slug": "threat-hunting-fundamentals",
+    "title": "Threat Hunting Fundamentals",
+    "shortTitle": "Threat Hunting",
+    "description": "Proactively search for threats in your environment. Learn hypothesis-driven hunting, IOC analysis, and threat intelligence integration techniques.",
+    "difficulty": "hard",
+    "duration": "14 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "Hunting Methodology & Mindset",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "Proactive vs Reactive Security",
+            "description": "Understanding the threat hunting mindset and why reactive detection alone is insufficient."
+          },
+          {
+            "id": "1.2",
+            "title": "Threat Hunting Maturity Model",
+            "description": "HMM levels 0–4 and how to assess your organization's hunting capability."
+          },
+          {
+            "id": "1.3",
+            "title": "Hypothesis-Driven Hunting",
+            "description": "Formulating testable hypotheses from threat intelligence, TTPs, and environmental context."
+          },
+          {
+            "id": "1.4",
+            "title": "Data Sources for Hunting",
+            "description": "Identifying and prioritizing telemetry: endpoint, network, cloud, and identity logs."
+          },
+          {
+            "id": "1.5",
+            "title": "Module 1 Quiz: Hunting Methodology & Mindset",
+            "description": "Test your understanding of proactive hunting philosophy, maturity models, and hypothesis development."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Threat Intelligence Integration",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "Threat Intelligence Platforms",
+            "description": "MISP, OpenCTI, ThreatConnect—aggregating and operationalizing intel feeds."
+          },
+          {
+            "id": "2.2",
+            "title": "IOC Types & Pyramid of Pain",
+            "description": "Hash values, IP addresses, domains, artifacts, tools, and TTPs—what matters most."
+          },
+          {
+            "id": "2.3",
+            "title": "MITRE ATT&CK for Hunters",
+            "description": "Mapping hunts to ATT&CK techniques, sub-techniques, and data sources."
+          },
+          {
+            "id": "2.4",
+            "title": "Building Threat Profiles",
+            "description": "Creating adversary profiles and predicting likely attack paths in your environment."
+          },
+          {
+            "id": "2.5",
+            "title": "Module 2 Quiz: Threat Intelligence Integration",
+            "description": "Assess your knowledge of TI platforms, IOC types, ATT&CK mapping, and threat profiling."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "Hunting Techniques & Tradecraft",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "Behavioral Analysis Hunting",
+            "description": "Identifying anomalous behavior patterns that evade signature-based detection."
+          },
+          {
+            "id": "3.2",
+            "title": "Statistical & Anomaly-Based Hunting",
+            "description": "Using frequency analysis, stacking, and outlier detection to find threats."
+          },
+          {
+            "id": "3.3",
+            "title": "Living Off the Land Detection",
+            "description": "Hunting for LOLBins, PowerShell abuse, WMI persistence, and dual-use tools."
+          },
+          {
+            "id": "3.4",
+            "title": "Hunting with YARA & Sigma",
+            "description": "Writing and deploying detection content during active hunts."
+          },
+          {
+            "id": "3.5",
+            "title": "Module 3 Quiz: Hunting Techniques & Tradecraft",
+            "description": "Evaluate your skills in behavioral analysis, anomaly hunting, LOLBin detection, and YARA/Sigma."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "Endpoint Threat Hunting",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "Process Tree Analysis",
+            "description": "Analyzing parent-child process relationships to detect malicious execution chains."
+          },
+          {
+            "id": "4.2",
+            "title": "Persistence Mechanism Hunting",
+            "description": "Registry run keys, scheduled tasks, services, WMI subscriptions, and startup folders."
+          },
+          {
+            "id": "4.3",
+            "title": "Memory & Fileless Threat Hunting",
+            "description": "Detecting process injection, reflective DLL loading, and in-memory-only payloads."
+          },
+          {
+            "id": "4.4",
+            "title": "Credential Access Hunting",
+            "description": "Detecting LSASS dumps, Kerberoasting, AS-REP roasting, and token manipulation."
+          },
+          {
+            "id": "4.5",
+            "title": "Module 4 Quiz: Endpoint Threat Hunting",
+            "description": "Test your knowledge of process analysis, persistence hunting, fileless threats, and credential attacks."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Network & Cloud Hunting",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "Network-Based Threat Hunting",
+            "description": "Hunting in Zeek logs, NetFlow, and DNS data for lateral movement and C2."
+          },
+          {
+            "id": "5.2",
+            "title": "Encrypted Traffic Analysis",
+            "description": "JA3/JA3S fingerprinting, certificate anomalies, and TLS metadata hunting."
+          },
+          {
+            "id": "5.3",
+            "title": "Cloud Environment Hunting",
+            "description": "Hunting in AWS CloudTrail, Azure Activity Logs, and GCP Audit Logs."
+          },
+          {
+            "id": "5.4",
+            "title": "Identity-Based Hunting",
+            "description": "Detecting impossible travel, MFA fatigue attacks, and OAuth token abuse."
+          },
+          {
+            "id": "5.5",
+            "title": "Module 5 Quiz: Network & Cloud Hunting",
+            "description": "Assess your ability to hunt in network metadata, encrypted traffic, cloud logs, and identity systems."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Hunt Operations & Reporting",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "Planning & Scoping Hunts",
+            "description": "Defining objectives, timelines, data requirements, and success criteria."
+          },
+          {
+            "id": "6.2",
+            "title": "Hunt Automation & Notebooks",
+            "description": "Using Jupyter notebooks, KQL, and SPL for repeatable hunt workflows."
+          },
+          {
+            "id": "6.3",
+            "title": "Documenting & Reporting Findings",
+            "description": "Writing actionable hunt reports that drive detection engineering improvements."
+          },
+          {
+            "id": "6.4",
+            "title": "From Hunt to Detection",
+            "description": "Converting successful hunts into automated detections and continuous monitoring."
+          },
+          {
+            "id": "6.5",
+            "title": "Module 6 Quiz: Hunt Operations & Reporting",
+            "description": "Evaluate your understanding of hunt planning, automation, reporting, and converting hunts to detections."
+          }
+        ]
+      }
+    ]
+  },
+  "detection-engineering-basics": {
+    "id": "detection-engineering",
+    "slug": "detection-engineering-basics",
+    "title": "Detection Engineering Basics",
+    "shortTitle": "Detection Engineering",
+    "description": "Build custom detection rules and analytics. Master SIGMA rules, YARA signatures, and detection-as-code methodologies for modern SOC environments.",
+    "difficulty": "hard",
+    "duration": "16 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "Detection Fundamentals",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "Detection Philosophy & Mindset",
+            "description": "The art and science of building effective detections."
+          },
+          {
+            "id": "1.2",
+            "title": "Detection Coverage Models",
+            "description": "Mapping and measuring your detection surface."
+          },
+          {
+            "id": "1.3",
+            "title": "Alert Quality & False Positive Management",
+            "description": "Building high-fidelity alerts analysts trust."
+          },
+          {
+            "id": "1.4",
+            "title": "The Detection Engineering Lifecycle",
+            "description": "From idea to production detection."
+          },
+          {
+            "id": "1.5",
+            "title": "Module 1 Quiz: Detection Fundamentals",
+            "description": "Test your understanding of detection philosophy, coverage models, and alert quality."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "SIGMA Rules",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "SIGMA Syntax Deep Dive",
+            "description": "Master the generic detection rule format."
+          },
+          {
+            "id": "2.2",
+            "title": "Writing Custom SIGMA Rules",
+            "description": "Craft rules from threat intelligence and hunt findings."
+          },
+          {
+            "id": "2.3",
+            "title": "SIGMA Modifiers & Conditions",
+            "description": "Advanced logic, aggregation, and near-time correlation."
+          },
+          {
+            "id": "2.4",
+            "title": "Rule Conversion & Backend Targets",
+            "description": "Convert SIGMA to Splunk SPL, Elastic KQL, and Sentinel."
+          },
+          {
+            "id": "2.5",
+            "title": "Module 2 Quiz: SIGMA Rules",
+            "description": "Assess your knowledge of SIGMA syntax, modifiers, and rule conversion."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "YARA Signatures",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "YARA Rule Structure",
+            "description": "Meta, strings, and condition blocks."
+          },
+          {
+            "id": "3.2",
+            "title": "Pattern Matching Techniques",
+            "description": "Text, hex, regex, and wildcard patterns."
+          },
+          {
+            "id": "3.3",
+            "title": "Advanced YARA Conditions",
+            "description": "Modules, file size, entropy, and PE features."
+          },
+          {
+            "id": "3.4",
+            "title": "YARA in Production",
+            "description": "Scanning at scale, performance, and integration."
+          },
+          {
+            "id": "3.5",
+            "title": "Module 3 Quiz: YARA Signatures",
+            "description": "Quiz on YARA rule structure, pattern matching, and conditions."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "Log Source Mastery",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "Windows Event Log Deep Dive",
+            "description": "Critical event IDs, Sysmon, and audit policies."
+          },
+          {
+            "id": "4.2",
+            "title": "Linux & Network Log Sources",
+            "description": "Auditd, syslog, Zeek, and firewall logs."
+          },
+          {
+            "id": "4.3",
+            "title": "Cloud & Identity Log Sources",
+            "description": "CloudTrail, Azure AD, Okta, and SaaS logs."
+          },
+          {
+            "id": "4.4",
+            "title": "Log Normalization & Enrichment",
+            "description": "CIM, ECS, and enrichment pipelines."
+          },
+          {
+            "id": "4.5",
+            "title": "Module 4 Quiz: Log Source Mastery",
+            "description": "Test your knowledge of Windows, Linux, network, and cloud log sources."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Detection as Code",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "Version Control for Detections",
+            "description": "Git workflows, branching, and review processes."
+          },
+          {
+            "id": "5.2",
+            "title": "CI/CD Pipelines for Detection",
+            "description": "Automated testing, validation, and deployment."
+          },
+          {
+            "id": "5.3",
+            "title": "Detection Testing Frameworks",
+            "description": "Unit testing, Atomic Red Team, and validation."
+          },
+          {
+            "id": "5.4",
+            "title": "Infrastructure as Code for SIEM",
+            "description": "Terraform, Ansible, and repeatable deployments."
+          },
+          {
+            "id": "5.5",
+            "title": "Module 5 Quiz: Detection as Code",
+            "description": "Assess your understanding of version control, CI/CD, and testing for detections."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Detection Operations",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "Detection Tuning & Optimization",
+            "description": "Reducing noise while maintaining coverage."
+          },
+          {
+            "id": "6.2",
+            "title": "Detection Metrics & KPIs",
+            "description": "Measuring detection program effectiveness."
+          },
+          {
+            "id": "6.3",
+            "title": "ATT&CK Coverage Mapping",
+            "description": "Visualizing and tracking detection coverage."
+          },
+          {
+            "id": "6.4",
+            "title": "Detection Lifecycle Management",
+            "description": "Retirement, review cadence, and continuous improvement."
+          },
+          {
+            "id": "6.5",
+            "title": "Module 6 Quiz: Detection Operations",
+            "description": "Quiz on tuning, metrics, coverage mapping, and detection lifecycle management."
+          }
+        ]
+      }
+    ]
+  },
+  "malware-analysis-fundamentals": {
+    "id": "malware-analysis",
+    "slug": "malware-analysis-fundamentals",
+    "title": "Malware Analysis Fundamentals",
+    "shortTitle": "Malware Analysis",
+    "description": "Analyze malicious software safely. Learn static and dynamic analysis, sandboxing, and reverse engineering basics for security professionals.",
+    "difficulty": "hard",
+    "duration": "18 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "Malware Landscape & Lab Setup",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "Malware Taxonomy",
+            "description": "Classify malware by behavior: viruses, worms, trojans, ransomware, rootkits, bootkits, and wipers."
+          },
+          {
+            "id": "1.2",
+            "title": "Threat Actor Motivations",
+            "description": "Understand financially-motivated, state-sponsored, hacktivist, and insider threat malware campaigns."
+          },
+          {
+            "id": "1.3",
+            "title": "Building a Safe Analysis Lab",
+            "description": "Configure isolated VMs with FlareVM, REMnux, and network segmentation for safe malware handling."
+          },
+          {
+            "id": "1.4",
+            "title": "Sample Acquisition & Handling",
+            "description": "Source malware samples from MalwareBazaar, VirusTotal, and malware zoos while maintaining chain of custody."
+          },
+          {
+            "id": "1.5",
+            "title": "Module 1 Quiz: Malware Landscape & Lab Setup",
+            "description": "Test your knowledge of malware categories and safe analysis environments."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Static Analysis Techniques",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "File Identification & Hashing",
+            "description": "Use file, TrID, ssdeep fuzzy hashing, and imphash to identify and classify unknown binaries."
+          },
+          {
+            "id": "2.2",
+            "title": "String Extraction & Analysis",
+            "description": "Extract readable strings with FLOSS, decode obfuscated strings, and identify IOCs from string output."
+          },
+          {
+            "id": "2.3",
+            "title": "PE Header Deep Dive",
+            "description": "Parse PE structures with PE-bear and pefile: sections, imports, exports, timestamps, and anomalies."
+          },
+          {
+            "id": "2.4",
+            "title": "Packing & Obfuscation Detection",
+            "description": "Detect UPX, Themida, and custom packers using entropy analysis, section names, and Detect It Easy."
+          },
+          {
+            "id": "2.5",
+            "title": "Module 2 Quiz: Static Analysis Techniques",
+            "description": "Assess your understanding of file identification, strings, and PE analysis."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "Dynamic & Behavioral Analysis",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "Sandbox Fundamentals",
+            "description": "Configure and use ANY.RUN, Cuckoo Sandbox, and Joe Sandbox for automated behavioral analysis."
+          },
+          {
+            "id": "3.2",
+            "title": "Process & Registry Monitoring",
+            "description": "Use Process Monitor, Process Hacker, and Regshot to capture runtime filesystem and registry changes."
+          },
+          {
+            "id": "3.3",
+            "title": "Network Traffic Capture",
+            "description": "Intercept malware C2 with FakeNet-NG, INetSim, and Wireshark to decode protocols and extract payloads."
+          },
+          {
+            "id": "3.4",
+            "title": "API Call Tracing",
+            "description": "Trace Win32 API calls with API Monitor and x64dbg to understand malware behavior at the system level."
+          },
+          {
+            "id": "3.5",
+            "title": "Module 3 Quiz: Dynamic & Behavioral Analysis",
+            "description": "Test your sandbox and runtime monitoring skills."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "Document & Script Malware",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "Office Macro Analysis",
+            "description": "Extract and deobfuscate VBA macros from Office documents using olevba, oletools, and ViperMonkey."
+          },
+          {
+            "id": "4.2",
+            "title": "PDF Malware Analysis",
+            "description": "Parse malicious PDFs with pdf-parser, peepdf, and identify JavaScript, launch actions, and embedded objects."
+          },
+          {
+            "id": "4.3",
+            "title": "PowerShell & Script Deobfuscation",
+            "description": "Decode Base64, character substitution, and invoke-expression chains in PowerShell, VBScript, and JScript."
+          },
+          {
+            "id": "4.4",
+            "title": "HTML Smuggling & LNK Files",
+            "description": "Analyze HTML smuggling payloads and malicious shortcut files used in modern phishing campaigns."
+          },
+          {
+            "id": "4.5",
+            "title": "Module 4 Quiz: Document & Script Malware",
+            "description": "Evaluate your ability to analyze macro and script-based threats."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Reverse Engineering Fundamentals",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "x86 Assembly Essentials",
+            "description": "Learn registers, instructions, calling conventions, and stack frames needed for binary analysis."
+          },
+          {
+            "id": "5.2",
+            "title": "Ghidra for Malware Analysis",
+            "description": "Navigate Ghidra's decompiler, cross-references, function graphs, and scripting for malware RE."
+          },
+          {
+            "id": "5.3",
+            "title": "Debugging with x64dbg",
+            "description": "Set breakpoints, trace execution, defeat anti-debugging tricks, and unpack samples with x64dbg."
+          },
+          {
+            "id": "5.4",
+            "title": "Identifying C2 Protocols",
+            "description": "Reverse engineer custom C2 communication: XOR encryption, domain generation algorithms, and protocol parsing."
+          },
+          {
+            "id": "5.5",
+            "title": "Module 5 Quiz: Reverse Engineering Fundamentals",
+            "description": "Test your knowledge of disassembly, debugging, and code analysis."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Reporting & Threat Intelligence",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "IOC Extraction & STIX/TAXII",
+            "description": "Extract indicators of compromise and format them using STIX 2.1 for automated threat intelligence sharing."
+          },
+          {
+            "id": "6.2",
+            "title": "YARA Rule Creation",
+            "description": "Write effective YARA rules from malware artifacts: strings, byte patterns, PE features, and conditions."
+          },
+          {
+            "id": "6.3",
+            "title": "Writing Malware Analysis Reports",
+            "description": "Structure professional reports with executive summary, technical details, IOCs, and MITRE ATT&CK mapping."
+          },
+          {
+            "id": "6.4",
+            "title": "Attribution & Campaign Tracking",
+            "description": "Link samples to threat actors using infrastructure overlaps, code reuse, and TTPs for campaign tracking."
+          },
+          {
+            "id": "6.5",
+            "title": "Module 6 Quiz: Reporting & Threat Intel",
+            "description": "Assess your malware reporting and IOC extraction skills."
+          }
+        ]
+      }
+    ]
+  },
+  "soc-analyst-path": {
+    "id": "soc-analyst-path",
+    "slug": "soc-analyst-path",
+    "title": "SOC Analyst Learning Path",
+    "shortTitle": "SOC Analyst Path",
+    "description": "A structured career-ready program covering everything from foundational SOC skills to advanced threat analysis, incident handling, and reporting. Designed to prepare you for real-world SOC analyst roles.",
+    "difficulty": "medium",
+    "duration": "40 hours",
+    "modules": [
+      {
+        "id": "1",
+        "title": "SOC Analyst Role & Environment",
+        "lessons": [
+          {
+            "id": "1.1",
+            "title": "Day in the Life of a SOC Analyst",
+            "description": "Walk through a typical shift including alert triage, escalation, documentation, and shift handover."
+          },
+          {
+            "id": "1.2",
+            "title": "SOC Maturity Models",
+            "description": "Understand SOC maturity levels from reactive to proactive and how organizations evolve their security operations."
+          },
+          {
+            "id": "1.3",
+            "title": "Compliance & Regulatory Frameworks",
+            "description": "Overview of PCI-DSS, HIPAA, GDPR, and SOX requirements relevant to SOC operations."
+          },
+          {
+            "id": "1.4",
+            "title": "Building Your Analyst Toolkit",
+            "description": "Set up your personal investigation toolkit with essential free and commercial tools."
+          },
+          {
+            "id": "1.5",
+            "title": "SOC Communication & Stakeholder Management",
+            "description": "Learn to communicate effectively with IT teams, management, and external parties during incidents."
+          },
+          {
+            "id": "1.6",
+            "title": "Metrics, KPIs & Reporting for SOC Teams",
+            "description": "Track and present SOC performance using MTTD, MTTR, alert volume, and efficiency metrics."
+          },
+          {
+            "id": "1.7",
+            "title": "Module 1 Quiz: SOC Analyst Role & Environment",
+            "description": "Test your understanding of SOC operations, maturity models, and compliance frameworks."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "Network Traffic Analysis",
+        "lessons": [
+          {
+            "id": "2.1",
+            "title": "TCP/IP Deep Dive for Analysts",
+            "description": "Master TCP flags, handshakes, sessions, and how attackers abuse protocol behavior."
+          },
+          {
+            "id": "2.2",
+            "title": "DNS Analysis & Threat Detection",
+            "description": "Detect DNS tunneling, DGA domains, fast-flux networks, and DNS-based C2 channels."
+          },
+          {
+            "id": "2.3",
+            "title": "HTTP/HTTPS Traffic Investigation",
+            "description": "Analyze web traffic for malicious payloads, beaconing patterns, and data exfiltration."
+          },
+          {
+            "id": "2.4",
+            "title": "Wireshark for SOC Analysts",
+            "description": "Practical packet capture analysis using display filters, stream following, and expert info."
+          },
+          {
+            "id": "2.5",
+            "title": "TLS/SSL Interception & Analysis",
+            "description": "Understand TLS handshakes, certificate validation, and how to analyze encrypted traffic."
+          },
+          {
+            "id": "2.6",
+            "title": "Network Flow Analysis with Zeek",
+            "description": "Use Zeek (Bro) for connection logs, protocol analysis, and behavioral network monitoring."
+          },
+          {
+            "id": "2.7",
+            "title": "Module 2 Quiz: Network Traffic Analysis",
+            "description": "Evaluate your skills in TCP/IP analysis, DNS threats, and packet inspection."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "SIEM Mastery",
+        "lessons": [
+          {
+            "id": "3.1",
+            "title": "Advanced SIEM Queries",
+            "description": "Write complex search queries using regex, subsearches, lookups, and statistical functions."
+          },
+          {
+            "id": "3.2",
+            "title": "Correlation Rule Development",
+            "description": "Design multi-event correlation rules to detect attack chains and reduce false positives."
+          },
+          {
+            "id": "3.3",
+            "title": "Dashboard Creation & Visualization",
+            "description": "Build actionable SOC dashboards that surface critical alerts and trends."
+          },
+          {
+            "id": "3.4",
+            "title": "Log Source Onboarding",
+            "description": "Integrate new data sources, normalize fields, and validate event parsing."
+          },
+          {
+            "id": "3.5",
+            "title": "Alert Tuning & False Positive Reduction",
+            "description": "Systematically reduce noise by tuning thresholds, whitelisting, and enrichment-based suppression."
+          },
+          {
+            "id": "3.6",
+            "title": "SIEM Use Case Development",
+            "description": "Design detection use cases from threat model to implementation and validation."
+          },
+          {
+            "id": "3.7",
+            "title": "Module 3 Quiz: SIEM Mastery",
+            "description": "Test your SIEM query writing, correlation rules, and dashboard skills."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "Endpoint Investigation",
+        "lessons": [
+          {
+            "id": "4.1",
+            "title": "Process Forensics on Windows",
+            "description": "Analyze running processes, DLL injection, process hollowing, and living-off-the-land binaries."
+          },
+          {
+            "id": "4.2",
+            "title": "Registry & Persistence Analysis",
+            "description": "Identify persistence mechanisms via Run keys, scheduled tasks, services, and WMI subscriptions."
+          },
+          {
+            "id": "4.3",
+            "title": "Linux Endpoint Forensics",
+            "description": "Investigate suspicious processes, network connections, cron jobs, and shell history on Linux."
+          },
+          {
+            "id": "4.4",
+            "title": "Memory Analysis Fundamentals",
+            "description": "Use Volatility to analyze memory dumps for hidden processes, injected code, and network artifacts."
+          },
+          {
+            "id": "4.5",
+            "title": "Browser Forensics & Web Artifacts",
+            "description": "Extract browsing history, cached files, cookies, and download records for investigation."
+          },
+          {
+            "id": "4.6",
+            "title": "PowerShell & Script Block Logging",
+            "description": "Detect malicious PowerShell usage through script block logging, transcription, and AMSI."
+          },
+          {
+            "id": "4.7",
+            "title": "Module 4 Quiz: Endpoint Investigation",
+            "description": "Assess your endpoint forensics knowledge on Windows and Linux systems."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "Phishing & Email Analysis",
+        "lessons": [
+          {
+            "id": "5.1",
+            "title": "Email Header Analysis",
+            "description": "Parse email headers to trace message origin, identify spoofing, and verify SPF/DKIM/DMARC."
+          },
+          {
+            "id": "5.2",
+            "title": "Malicious Attachment Analysis",
+            "description": "Safely examine Office macros, PDFs, ISO files, and archive-based payloads."
+          },
+          {
+            "id": "5.3",
+            "title": "URL & Domain Investigation",
+            "description": "Investigate suspicious links using URLScan, VirusTotal, WHOIS, and passive DNS."
+          },
+          {
+            "id": "5.4",
+            "title": "Phishing Response Playbook",
+            "description": "End-to-end phishing incident handling: detection, containment, eradication, and reporting."
+          },
+          {
+            "id": "5.5",
+            "title": "Business Email Compromise Detection",
+            "description": "Identify BEC patterns including CEO fraud, vendor impersonation, and invoice redirection."
+          },
+          {
+            "id": "5.6",
+            "title": "Email Security Architecture",
+            "description": "Configure and evaluate SPF, DKIM, DMARC, email gateways, and sandboxing solutions."
+          },
+          {
+            "id": "5.7",
+            "title": "Module 5 Quiz: Phishing & Email Analysis",
+            "description": "Validate your email header analysis and phishing response skills."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "Incident Handling & Reporting",
+        "lessons": [
+          {
+            "id": "6.1",
+            "title": "Incident Severity Classification",
+            "description": "Apply consistent severity scoring using asset criticality, impact, and threat intelligence context."
+          },
+          {
+            "id": "6.2",
+            "title": "Evidence Collection & Chain of Custody",
+            "description": "Preserve digital evidence with proper hashing, storage, and documentation for legal admissibility."
+          },
+          {
+            "id": "6.3",
+            "title": "Writing Effective Incident Reports",
+            "description": "Structure professional reports with executive summary, timeline, technical findings, and recommendations."
+          },
+          {
+            "id": "6.4",
+            "title": "Post-Incident Review & Lessons Learned",
+            "description": "Conduct blameless retrospectives to improve detection, response, and prevention capabilities."
+          },
+          {
+            "id": "6.5",
+            "title": "Tabletop Exercises & Simulation",
+            "description": "Plan and conduct incident response tabletop exercises to test team readiness."
+          },
+          {
+            "id": "6.6",
+            "title": "Building Runbooks & Automation",
+            "description": "Create standardized runbooks and automate repetitive response actions with SOAR."
+          },
+          {
+            "id": "6.7",
+            "title": "Module 6 Quiz: Incident Handling & Reporting",
+            "description": "Comprehensive exam covering incident handling, reporting, and evidence management."
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "title": "Cloud Security Monitoring",
+        "lessons": [
+          {
+            "id": "7.1",
+            "title": "Cloud Security Fundamentals for SOC",
+            "description": "Understand shared responsibility, cloud service models, and security implications for monitoring."
+          },
+          {
+            "id": "7.2",
+            "title": "AWS CloudTrail & GuardDuty Analysis",
+            "description": "Investigate AWS API activity, detect unauthorized access, and analyze GuardDuty findings."
+          },
+          {
+            "id": "7.3",
+            "title": "Azure & Microsoft 365 Security Monitoring",
+            "description": "Monitor Azure AD sign-ins, Defender alerts, and Microsoft 365 audit logs."
+          },
+          {
+            "id": "7.4",
+            "title": "Container & Kubernetes Security",
+            "description": "Detect threats in containerized environments including image scanning and runtime monitoring."
+          },
+          {
+            "id": "7.5",
+            "title": "GCP Security Command Center & Logging",
+            "description": "Analyze Google Cloud audit logs, Security Command Center findings, and IAM anomalies."
+          },
+          {
+            "id": "7.6",
+            "title": "Cloud SIEM Integration & Multi-Cloud Monitoring",
+            "description": "Centralize cloud logs into SIEM platforms and build detection rules across multi-cloud environments."
+          },
+          {
+            "id": "7.7",
+            "title": "Module 7 Quiz: Cloud Security Monitoring",
+            "description": "Test your cloud security knowledge across AWS, Azure, and container environments."
+          }
+        ]
+      },
+      {
+        "id": "8",
+        "title": "Threat Intelligence & Hunting",
+        "lessons": [
+          {
+            "id": "8.1",
+            "title": "Threat Intelligence Lifecycle",
+            "description": "Plan, collect, process, analyze, and disseminate actionable threat intelligence."
+          },
+          {
+            "id": "8.2",
+            "title": "Building IOC Feeds & STIX/TAXII",
+            "description": "Create and consume threat intelligence feeds using STIX format and TAXII protocols."
+          },
+          {
+            "id": "8.3",
+            "title": "Hypothesis-Driven Threat Hunting",
+            "description": "Develop hunting hypotheses from ATT&CK techniques and execute structured hunts."
+          },
+          {
+            "id": "8.4",
+            "title": "Hunting with Data Analytics",
+            "description": "Apply statistical analysis, frequency analysis, and anomaly detection to find hidden threats."
+          },
+          {
+            "id": "8.5",
+            "title": "MITRE ATT&CK for Threat Hunting",
+            "description": "Map adversary techniques to ATT&CK framework and develop detection coverage matrices."
+          },
+          {
+            "id": "8.6",
+            "title": "Threat Actor Profiling & Campaign Tracking",
+            "description": "Track APT groups, attribute campaigns, and build threat actor profiles using diamond model."
+          },
+          {
+            "id": "8.7",
+            "title": "Module 8 Quiz: Threat Intelligence & Hunting",
+            "description": "Assess threat intel lifecycle, IOC management, and hunting methodology skills."
+          }
+        ]
+      },
+      {
+        "id": "9",
+        "title": "Digital Forensics Fundamentals",
+        "lessons": [
+          {
+            "id": "9.1",
+            "title": "Digital Forensics Methodology",
+            "description": "Follow forensic methodology: identification, preservation, analysis, and presentation."
+          },
+          {
+            "id": "9.2",
+            "title": "Disk Imaging & File System Analysis",
+            "description": "Create forensic images and analyze NTFS, ext4, and FAT file systems for evidence."
+          },
+          {
+            "id": "9.3",
+            "title": "Timeline Analysis & Super Timeline",
+            "description": "Build comprehensive timelines from multiple artifact sources using log2timeline/plaso."
+          },
+          {
+            "id": "9.4",
+            "title": "Anti-Forensics & Evidence Destruction",
+            "description": "Detect timestomping, log clearing, secure deletion, and other anti-forensic techniques."
+          },
+          {
+            "id": "9.5",
+            "title": "Mobile Device Forensics",
+            "description": "Extract and analyze evidence from iOS and Android devices including app data and communications."
+          },
+          {
+            "id": "9.6",
+            "title": "Forensic Report Writing & Court Presentation",
+            "description": "Prepare legally admissible forensic reports and understand expert witness responsibilities."
+          },
+          {
+            "id": "9.7",
+            "title": "Module 9 Quiz: Digital Forensics Fundamentals",
+            "description": "Evaluate disk forensics, timeline analysis, and anti-forensics detection skills."
+          }
+        ]
+      },
+      {
+        "id": "10",
+        "title": "Security Automation & SOAR",
+        "lessons": [
+          {
+            "id": "10.1",
+            "title": "Introduction to SOAR Platforms",
+            "description": "Understand SOAR architecture, orchestration vs automation, and selecting the right platform."
+          },
+          {
+            "id": "10.2",
+            "title": "Building Automated Playbooks",
+            "description": "Design and implement automated response playbooks for common alert types like phishing and malware."
+          },
+          {
+            "id": "10.3",
+            "title": "API Integration for Security Tools",
+            "description": "Connect security tools via REST APIs for automated enrichment, blocking, and ticketing."
+          },
+          {
+            "id": "10.4",
+            "title": "Python Scripting for SOC Analysts",
+            "description": "Write Python scripts for log parsing, IOC extraction, and automated investigation workflows."
+          },
+          {
+            "id": "10.5",
+            "title": "Chatbot & Notification Automation",
+            "description": "Build Slack/Teams integrations for alert notifications and interactive response commands."
+          },
+          {
+            "id": "10.6",
+            "title": "Measuring Automation ROI & Metrics",
+            "description": "Track automation effectiveness using time saved, MTTR reduction, and analyst satisfaction metrics."
+          },
+          {
+            "id": "10.7",
+            "title": "Module 10 Quiz: Security Automation & SOAR",
+            "description": "Test your SOAR platform knowledge, playbook design, and API integration skills."
+          }
+        ]
+      },
+      {
+        "id": "11",
+        "title": "Vulnerability Management",
+        "lessons": [
+          {
+            "id": "11.1",
+            "title": "Vulnerability Management Lifecycle",
+            "description": "Plan, scan, assess, remediate, and verify — the complete VM lifecycle for SOC teams."
+          },
+          {
+            "id": "11.2",
+            "title": "Scanning Tools: Nessus, Qualys & OpenVAS",
+            "description": "Configure and run vulnerability scans using industry-standard tools and interpret results."
+          },
+          {
+            "id": "11.3",
+            "title": "CVSS Scoring & Risk Prioritization",
+            "description": "Calculate CVSS scores, understand exploit prediction scoring, and prioritize remediation."
+          },
+          {
+            "id": "11.4",
+            "title": "Patch Management & Remediation Workflows",
+            "description": "Coordinate patching across IT teams with SLAs, exceptions, and change management."
+          },
+          {
+            "id": "11.5",
+            "title": "Attack Surface Management",
+            "description": "Discover and monitor external-facing assets, shadow IT, and third-party exposure."
+          },
+          {
+            "id": "11.6",
+            "title": "Vulnerability Reporting & Stakeholder Communication",
+            "description": "Create executive dashboards, trend reports, and communicate risk to non-technical stakeholders."
+          },
+          {
+            "id": "11.7",
+            "title": "Module 11 Quiz: Vulnerability Management",
+            "description": "Assess vulnerability scanning, CVSS scoring, and remediation workflow knowledge."
+          }
+        ]
+      },
+      {
+        "id": "12",
+        "title": "Advanced Attack Techniques",
+        "lessons": [
+          {
+            "id": "12.1",
+            "title": "Active Directory Attacks & Defense",
+            "description": "Detect Kerberoasting, Pass-the-Hash, DCSync, and Golden Ticket attacks in AD environments."
+          },
+          {
+            "id": "12.2",
+            "title": "Lateral Movement Detection",
+            "description": "Identify lateral movement via PsExec, WMI, RDP, and SMB using log analysis and EDR."
+          },
+          {
+            "id": "12.3",
+            "title": "Ransomware Analysis & Response",
+            "description": "Understand ransomware kill chains, detect pre-encryption behavior, and execute containment."
+          },
+          {
+            "id": "12.4",
+            "title": "Supply Chain Attack Detection",
+            "description": "Detect software supply chain compromises, dependency confusion, and trojanized updates."
+          },
+          {
+            "id": "12.5",
+            "title": "Zero-Day & Exploit Detection",
+            "description": "Identify exploitation attempts through behavioral analysis, exploit guard alerts, and anomaly detection."
+          },
+          {
+            "id": "12.6",
+            "title": "Red Team vs Blue Team Exercises",
+            "description": "Plan and participate in purple team exercises to validate detections and improve SOC capabilities."
+          },
+          {
+            "id": "12.7",
+            "title": "Final Assessment Quiz: SOC Analyst Learning Path",
+            "description": "A comprehensive, medium-difficulty final assessment covering all 12 modules of the course."
+          }
+        ]
+      }
+    ]
+  },
+  "network-fundamentals": {
+    "id": "network-fundamentals",
+    "slug": "network-fundamentals",
+    "title": "Network Fundamentals",
+    "shortTitle": "Net Basics",
+    "description": "Master the foundations of computer networking — from the OSI model and TCP/IP to subnetting, routing, switching, DNS, DHCP, wireless, and network troubleshooting. Essential knowledge for any cybersecurity professional.",
+    "difficulty": "easy",
+    "duration": "16 hours",
+    "modules": [
+      {
+        "id": "nf-1",
+        "title": "Introduction to Computer Networks",
+        "lessons": [
+          {
+            "id": "nf-1.1",
+            "title": "What is a Computer Network?",
+            "description": "Understanding networks, their purpose, and how devices communicate."
+          },
+          {
+            "id": "nf-1.2",
+            "title": "Types of Networks: LAN, WAN, MAN & More",
+            "description": "Explore LAN, WAN, MAN, PAN, CAN, and their characteristics."
+          },
+          {
+            "id": "nf-1.3",
+            "title": "Network Topologies",
+            "description": "Star, bus, ring, mesh, and hybrid topologies — advantages and use cases."
+          },
+          {
+            "id": "nf-1.4",
+            "title": "Network Architecture: Client-Server vs Peer-to-Peer",
+            "description": "Comparing centralized and decentralized network models."
+          },
+          {
+            "id": "nf-q1",
+            "title": "Module 1 Quiz: Computer Networks Basics",
+            "description": "Test your knowledge of network types, topologies, and architecture."
+          }
+        ]
+      },
+      {
+        "id": "nf-2",
+        "title": "The OSI Model",
+        "lessons": [
+          {
+            "id": "nf-2.1",
+            "title": "Understanding the OSI Reference Model",
+            "description": "The 7-layer model and why it matters for networking and security."
+          },
+          {
+            "id": "nf-2.2",
+            "title": "Physical & Data Link Layers (Layers 1-2)",
+            "description": "Cables, signals, MAC addresses, switches, and Ethernet framing."
+          },
+          {
+            "id": "nf-2.3",
+            "title": "Network & Transport Layers (Layers 3-4)",
+            "description": "IP addressing, routing, TCP, UDP, and port numbers."
+          },
+          {
+            "id": "nf-2.4",
+            "title": "Session, Presentation & Application Layers (Layers 5-7)",
+            "description": "Session management, data formatting, encryption, and application protocols."
+          },
+          {
+            "id": "nf-2.5",
+            "title": "Data Encapsulation & PDUs",
+            "description": "How data is encapsulated at each layer: bits, frames, packets, segments, and data."
+          },
+          {
+            "id": "nf-q2",
+            "title": "Module 2 Quiz: OSI Model",
+            "description": "Assess your understanding of the 7-layer OSI model and data encapsulation."
+          }
+        ]
+      },
+      {
+        "id": "nf-3",
+        "title": "TCP/IP Protocol Suite",
+        "lessons": [
+          {
+            "id": "nf-3.1",
+            "title": "TCP/IP Model vs OSI Model",
+            "description": "The 4-layer TCP/IP model and how it maps to the OSI model."
+          },
+          {
+            "id": "nf-3.2",
+            "title": "TCP: Connection-Oriented Communication",
+            "description": "Three-way handshake, sequence numbers, flow control, and reliability."
+          },
+          {
+            "id": "nf-3.3",
+            "title": "UDP: Connectionless Communication",
+            "description": "When speed matters more than reliability — use cases and header format."
+          },
+          {
+            "id": "nf-3.4",
+            "title": "ICMP & ARP Protocols",
+            "description": "Ping, traceroute, ARP resolution, and their role in network communication."
+          },
+          {
+            "id": "nf-3.5",
+            "title": "Ports & Sockets",
+            "description": "Well-known ports, registered ports, ephemeral ports, and socket communication."
+          },
+          {
+            "id": "nf-q3",
+            "title": "Module 3 Quiz: TCP/IP Protocol Suite",
+            "description": "Test your knowledge of TCP, UDP, ICMP, ARP, and port numbers."
+          }
+        ]
+      },
+      {
+        "id": "nf-4",
+        "title": "IP Addressing & Subnetting",
+        "lessons": [
+          {
+            "id": "nf-4.1",
+            "title": "IPv4 Addressing Fundamentals",
+            "description": "Binary conversion, address classes, and the structure of IPv4 addresses."
+          },
+          {
+            "id": "nf-4.2",
+            "title": "Subnet Masks & CIDR Notation",
+            "description": "Understanding subnet masks, CIDR, and how they define network boundaries."
+          },
+          {
+            "id": "nf-4.3",
+            "title": "Subnetting Practice",
+            "description": "Step-by-step subnetting calculations — network ID, broadcast, usable hosts."
+          },
+          {
+            "id": "nf-4.4",
+            "title": "Private vs Public IP Addresses & NAT",
+            "description": "RFC 1918 ranges, NAT, PAT, and how private networks access the internet."
+          },
+          {
+            "id": "nf-4.5",
+            "title": "IPv6 Fundamentals",
+            "description": "IPv6 address format, types, transition mechanisms, and dual-stack."
+          },
+          {
+            "id": "nf-q4",
+            "title": "Module 4 Quiz: IP Addressing & Subnetting",
+            "description": "Validate your subnetting skills and IPv4/IPv6 knowledge."
+          }
+        ]
+      },
+      {
+        "id": "nf-5",
+        "title": "Network Devices & Infrastructure",
+        "lessons": [
+          {
+            "id": "nf-5.1",
+            "title": "Hubs, Switches & Bridges",
+            "description": "Layer 2 devices — how switches learn MAC addresses and forward frames."
+          },
+          {
+            "id": "nf-5.2",
+            "title": "Routers & Routing Basics",
+            "description": "How routers forward packets, routing tables, static vs dynamic routing."
+          },
+          {
+            "id": "nf-5.3",
+            "title": "Firewalls, Proxies & Load Balancers",
+            "description": "Packet filtering, stateful inspection, reverse proxies, and traffic distribution."
+          },
+          {
+            "id": "nf-5.4",
+            "title": "Access Points & Network Controllers",
+            "description": "Wireless access points, WLAN controllers, and network management."
+          },
+          {
+            "id": "nf-5.5",
+            "title": "VLANs & Network Segmentation",
+            "description": "Virtual LANs, trunking (802.1Q), and why segmentation improves security."
+          },
+          {
+            "id": "nf-q5",
+            "title": "Module 5 Quiz: Network Devices",
+            "description": "Test your understanding of switches, routers, firewalls, and VLANs."
+          }
+        ]
+      },
+      {
+        "id": "nf-6",
+        "title": "Application Layer Protocols",
+        "lessons": [
+          {
+            "id": "nf-6.1",
+            "title": "DNS: Domain Name System",
+            "description": "DNS hierarchy, record types (A, AAAA, MX, CNAME, TXT), and query process."
+          },
+          {
+            "id": "nf-6.2",
+            "title": "DHCP: Dynamic Host Configuration",
+            "description": "DORA process, lease management, scopes, and DHCP relay."
+          },
+          {
+            "id": "nf-6.3",
+            "title": "HTTP & HTTPS",
+            "description": "Request/response model, methods, status codes, TLS/SSL, and certificates."
+          },
+          {
+            "id": "nf-6.4",
+            "title": "Email Protocols: SMTP, POP3, IMAP",
+            "description": "How email works end-to-end — sending, receiving, and storage."
+          },
+          {
+            "id": "nf-6.5",
+            "title": "FTP, SSH, Telnet & Other Protocols",
+            "description": "File transfer, remote access protocols, and their security implications."
+          },
+          {
+            "id": "nf-q6",
+            "title": "Module 6 Quiz: Application Protocols",
+            "description": "Assess your knowledge of DNS, DHCP, HTTP, email, and file transfer protocols."
+          }
+        ]
+      },
+      {
+        "id": "nf-7",
+        "title": "Ethernet & Data Link Technologies",
+        "lessons": [
+          {
+            "id": "nf-7.1",
+            "title": "Ethernet Standards & Cabling",
+            "description": "Cat5e, Cat6, fiber optics, cable types, and Ethernet standards (10/100/1G/10G)."
+          },
+          {
+            "id": "nf-7.2",
+            "title": "MAC Addresses & Ethernet Framing",
+            "description": "MAC address format, OUI, broadcast/multicast, and Ethernet frame structure."
+          },
+          {
+            "id": "nf-7.3",
+            "title": "Switching Concepts & STP",
+            "description": "MAC address tables, switching methods, Spanning Tree Protocol, and loop prevention."
+          },
+          {
+            "id": "nf-7.4",
+            "title": "ARP & Layer 2 Security Concerns",
+            "description": "ARP operation, ARP spoofing, MAC flooding, and Layer 2 attack vectors."
+          },
+          {
+            "id": "nf-q7",
+            "title": "Module 7 Quiz: Ethernet & Data Link",
+            "description": "Test Ethernet standards, MAC addressing, switching, and ARP concepts."
+          }
+        ]
+      },
+      {
+        "id": "nf-8",
+        "title": "Wireless Networking",
+        "lessons": [
+          {
+            "id": "nf-8.1",
+            "title": "Wireless Standards (802.11a/b/g/n/ac/ax)",
+            "description": "Wi-Fi generations, frequencies (2.4 GHz vs 5 GHz), channel width, and speeds."
+          },
+          {
+            "id": "nf-8.2",
+            "title": "Wireless Security: WEP, WPA, WPA2, WPA3",
+            "description": "Evolution of wireless security — vulnerabilities and best practices."
+          },
+          {
+            "id": "nf-8.3",
+            "title": "Wireless Authentication & Enterprise Wi-Fi",
+            "description": "PSK vs 802.1X/RADIUS, EAP methods, and certificate-based authentication."
+          },
+          {
+            "id": "nf-8.4",
+            "title": "Wireless Threats & Mitigation",
+            "description": "Evil twin, rogue AP, deauth attacks, war driving, and wireless IDS."
+          },
+          {
+            "id": "nf-q8",
+            "title": "Module 8 Quiz: Wireless Networking",
+            "description": "Validate wireless standards, security protocols, and threat knowledge."
+          }
+        ]
+      },
+      {
+        "id": "nf-9",
+        "title": "Network Troubleshooting & Tools",
+        "lessons": [
+          {
+            "id": "nf-9.1",
+            "title": "Troubleshooting Methodology",
+            "description": "Systematic approach: identify, theory, test, plan, implement, verify, document."
+          },
+          {
+            "id": "nf-9.2",
+            "title": "Command-Line Tools: ping, traceroute, nslookup",
+            "description": "Using ping, tracert/traceroute, nslookup, dig, and pathping for diagnostics."
+          },
+          {
+            "id": "nf-9.3",
+            "title": "Network Analysis: netstat, ss, arp, ipconfig/ifconfig",
+            "description": "Viewing connections, routing tables, ARP caches, and interface configuration."
+          },
+          {
+            "id": "nf-9.4",
+            "title": "Packet Capture with Wireshark",
+            "description": "Capturing and analyzing packets — filters, following streams, and protocol analysis."
+          },
+          {
+            "id": "nf-9.5",
+            "title": "Hands-On: Network Troubleshooting Lab",
+            "description": "Diagnose and resolve common network issues in simulated scenarios."
+          },
+          {
+            "id": "nf-q9",
+            "title": "Module 9 Quiz: Network Troubleshooting",
+            "description": "Assess your ability to use network diagnostic tools and methodologies."
+          }
+        ]
+      },
+      {
+        "id": "nf-10",
+        "title": "Network Security & Modern Networking",
+        "lessons": [
+          {
+            "id": "nf-10.1",
+            "title": "Network Security Fundamentals",
+            "description": "Defense in depth, least privilege, segmentation, and the CIA triad in networking."
+          },
+          {
+            "id": "nf-10.2",
+            "title": "VPNs: Site-to-Site & Remote Access",
+            "description": "IPSec, SSL/TLS VPNs, tunneling protocols, and split tunneling."
+          },
+          {
+            "id": "nf-10.3",
+            "title": "Network Access Control (NAC) & 802.1X",
+            "description": "Port-based authentication, NAC solutions, and zero trust networking."
+          },
+          {
+            "id": "nf-10.4",
+            "title": "Cloud & Virtualized Networking",
+            "description": "Virtual switches, SDN, VPC, cloud network architecture, and micro-segmentation."
+          },
+          {
+            "id": "nf-10.5",
+            "title": "Course Summary & Next Steps",
+            "description": "Review all modules and prepare for advanced networking and security courses."
+          },
+          {
+            "id": "nf-q10",
+            "title": "Final Certification Exam: Network Fundamentals",
+            "description": "Comprehensive final exam covering all 10 modules. Pass with 80% to earn your certificate."
+          }
+        ]
+      }
+    ]
+  }
+}

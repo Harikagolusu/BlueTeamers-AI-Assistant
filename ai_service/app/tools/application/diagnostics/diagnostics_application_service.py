@@ -7,6 +7,12 @@ from app.tools.domain.results.health_result import HealthResult
 from app.tools.domain.schemas.connectivity_schema import ConnectivitySchema
 from app.tools.domain.results.connectivity_result import ConnectivityResult
 
+# Only loopback / local-network diagnostics hosts are ever reachable. Arbitrary
+# user-supplied host:port connectivity checks would create an SSRF / network-
+# scan primitive, so everything else is rejected.
+_ALLOWED_HOSTS = {"127.0.0.1", "localhost", "::1"}
+_ALLOWED_PORTS = {8000, 8001, 5173}
+
 class DiagnosticsApplicationService(BaseService, IDiagnosticsService):
     async def _on_initialize(self) -> None:
         self._logger.info("Initializing DiagnosticsApplicationService")
@@ -18,6 +24,8 @@ class DiagnosticsApplicationService(BaseService, IDiagnosticsService):
         return HealthResult(status="healthy", components=components)
 
     async def check_connectivity(self, schema: ConnectivitySchema) -> ConnectivityResult:
+        if schema.host not in _ALLOWED_HOSTS or schema.port not in _ALLOWED_PORTS:
+            return ConnectivityResult(reachable=False, latency_ms=0.0)
         start = time.perf_counter()
         reachable = False
         try:

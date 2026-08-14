@@ -14,6 +14,7 @@ from app.chat.pipeline.cache_stage import CacheStage
 from app.chat.pipeline.adaptive_stage import AdaptiveContextStage, AdaptivePersistenceStage
 from app.chat.pipeline.page_context_stage import PageContextStage
 from app.chat.pipeline.attachment_parse_stage import AttachmentParseStage
+from app.chat.pipeline.guardrails_stage import InputGuardrailsStage, OutputGuardrailsStage
 from app.chat.pipeline.persona_stage import PersonaLoadStage
 from app.chat.pipeline.platform_context_stage import PlatformContextLoadStage
 from app.multilingual.stage import LanguageContextStage
@@ -152,6 +153,11 @@ def get_chat_service() -> IChatService:
     from app.observability.dependencies import get_observability_service
     obs_service = get_observability_service()
 
+    # Guardrails service (input/output safety). Fully wired through
+    # app.guardrails.dependencies; used by the pipeline stages below.
+    from app.guardrails.dependencies import get_guardrails_service
+    guardrails_service = get_guardrails_service(obs_service)
+
     # Cache Service manual resolution
     from app.cache.dependencies import get_cache_store
     from app.cache.default_manager import DefaultCacheManager
@@ -283,6 +289,9 @@ def get_chat_service() -> IChatService:
         store=adaptive_store,
     )
     stages = [
+        # Input guardrails FIRST: validate the raw user query (prompt-injection
+        # heuristics, length cap) before any downstream stage processes it.
+        InputGuardrailsStage(guardrails_service),
         # Sprint 7 (multilingual): resolve the response language FIRST so the
         # cache key and every downstream stage operate on the resolved code.
         LanguageContextStage(
@@ -306,6 +315,10 @@ def get_chat_service() -> IChatService:
         RoutePlanningStage(registry),
         EngineExecutionStage(factory),
         CompositionStage(),
+        # Output guardrails: validate the composed answer before it is returned
+        # (length cap + leakage heuristics), short-circuiting to a graceful
+        # refusal when a violation is flagged.
+        OutputGuardrailsStage(guardrails_service),
         SuggestedCoursesStage(platform_repo),
         PersistenceStage(memory_manager, conversation_service=get_conversation_service()),
         AdaptivePersistenceStage(adaptive_service),

@@ -6,6 +6,29 @@ from app.runtime.context_manager import RuntimeContextManager
 import uuid
 import time
 
+def _trusted_user_id(request: Request) -> str:
+    """Derive a caller identity that the client cannot spoof.
+
+    Prefer the validated JWT (``user_id`` claim) from the Authorization header;
+    fall back to the client IP otherwise. The ``x-user-id`` header is NOT
+    trusted because any caller can set it to a fresh value per request and
+    bypass per-user rate limits / quotas.
+    """
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        token = auth[7:].strip()
+        if token:
+            try:
+                from app.security.auth import resolve_user_identity
+                user_id, _email = resolve_user_identity(token)
+                if user_id:
+                    return f"user:{user_id}"
+            except Exception:
+                pass
+    host = request.client.host if request.client else "unknown"
+    return f"ip:{host}"
+
+
 class RuntimeMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, runtime_manager: RuntimeManager):
         super().__init__(app)
@@ -13,7 +36,7 @@ class RuntimeMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         trace_id = request.headers.get("x-trace-id", str(uuid.uuid4()))
-        user_id = request.headers.get("x-user-id", "anonymous")
+        user_id = _trusted_user_id(request)
         session_id = request.headers.get("x-session-id", str(uuid.uuid4()))
         
         # 1. Initialize RuntimeContext lifecycle
