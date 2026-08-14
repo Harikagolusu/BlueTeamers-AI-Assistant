@@ -7,6 +7,21 @@ const SESSION_STORAGE_KEY = 'bt_chat_messages_v1';
 const CONVERSATION_ID_STORAGE_KEY = 'bt_chat_conversation_id_v1';
 const LANGUAGE_STORAGE_KEY = 'bt_chat_language_v1';
 
+// Cross-tab conversation sync channel. sessionStorage is PER-TAB, so the
+// floating assistant and the /chat workspace only share a conversation when
+// they live in the SAME tab. The "Open full workspace" button opens a NEW tab,
+// so we additionally mirror chat state over a BroadcastChannel: changes in one
+// tab replay live into the other, and a freshly-opened workspace pulls the
+// in-flight conversation from the floating window.
+const SYNC_CHANNEL = 'bt_chat_sync_v1';
+
+interface SyncState {
+  messages: ChatMessage[];
+  conversationId: string | null;
+}
+
+const signatureOf = (m: ChatMessage[]) => JSON.stringify(m);
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -49,6 +64,151 @@ export function useChat(onNewConversation?: (id: string) => void) {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cross-tab BroadcastChannel sync (see SYNC_CHANNEL comment). Each useChat
+  // instance mirrors { messages, conversationId } to sibling tabs so the
+  // floating window and the full workspace continue the same LIVE conversation
+  // even when the workspace is opened in a new tab (sessionStorage is per-tab,
+  // so a new tab would otherwise start empty and never receive updates).
+  const instanceIdRef = useRef<string>(`bt-chat-${crypto.randomUUID()}`);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  // Hash of the last snapshot this instance announced (or adopted) so we never
+  // echo identical state back and forth between tabs.
+  const lastPublishedHashRef = useRef<string | null>(null);
+  // Skip the very first publish: a freshly-opened tab must PULL the in-flight
+  // conversation (REQUEST) rather than announce an empty state that could wipe
+  // a live conversation held by the floating window.
+  const skipFirstPublishRef = useRef(true);
+  // While a REQUEST for another tab's conversation is outstanding, publishing is
+  // suppressed: this tab must ADOPT existing state (sibling -> this) before it
+  // may announce anything back, otherwise its initial default welcome would
+  // clobber the live conversation in the floating window. Cleared once state is
+  // adopted, or after a short grace period when no sibling holds a conversation.
+  const adoptionPendingRef = useRef(false);
+  const adoptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref mirror of messages so the channel handler (registered once) and the
+  // in-flight initializeSession always read the current value.
+  const messagesRef = useRef<ChatMessage[]>(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  const applyIncomingState = useCallback((data: SyncState & { instanceId?: string; fromClear?: boolean }) => {
+    const incoming = data.messages;
+    const incomingId = data.conversationId ?? null;
+    if (!Array.isArray(incoming)) return;
+    // Adopting a sibling's state ends our request/wait for adoption.
+    adoptionPendingRef.current = false;
+    const localMessages = messagesRef.current;
+    const localId = conversationIdRef.current;
+
+    // Only an explicit CLEAR may wipe a live conversation; a stray empty
+    // snapshot (e.g. an uninitialized sibling tab) must not clobber history.
+    if (incoming.length === 0 && localMessages.length > 0 && !data.fromClear) return;
+
+    const sameMessages = signatureOf(localMessages) === signatureOf(incoming);
+    const sameId = localId === incomingId;
+    if (sameMessages && sameId) return;
+
+    // Mark the adopted snapshot as already-announced so we don't echo it back.
+    lastPublishedHashRef.current = JSON.stringify({ m: incoming, c: incomingId });
+    setMessages(incoming);
+    if (!sameId) setConversationId(incomingId);
+  }, []);
+
+  const applyIncomingRef = useRef(applyIncomingState);
+  useEffect(() => {
+    applyIncomingRef.current = applyIncomingState;
+  }, [applyIncomingState]);
+
+  // Subscribe to the sync channel. A freshly-opened workspace tab has EMPTY
+  // sessionStorage, so it broadcasts a REQUEST and adopts the in-flight
+  // conversation from whichever tab holds it (usually the floating window).
+  useEffect(() => {
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel(SYNC_CHANNEL);
+      channelRef.current = channel;
+    } catch {
+      return; // BroadcastChannel unsupported -> same-tab + sessionStorage only
+    }
+
+    channel.onmessage = (ev: MessageEvent) => {
+      const data = ev.data;
+      if (!data || typeof data !== 'object' || data.instanceId === instanceIdRef.current) return;
+      if (data.type === 'request') {
+        // Another tab just opened and wants our current conversation.
+        const state: SyncState = {
+          messages: messagesRef.current,
+          conversationId: conversationIdRef.current,
+        };
+        if (state.messages.length > 0 || state.conversationId) {
+          try {
+            channelRef.current?.postMessage({
+              type: 'state',
+              instanceId: instanceIdRef.current,
+              ...state,
+            });
+          } catch {
+            // best-effort
+          }
+        }
+        return;
+      }
+      if (data.type === 'clear') {
+        // A sibling tab explicitly cleared / started a new conversation.
+        adoptionPendingRef.current = false;
+        if (messagesRef.current.length === 0 && conversationIdRef.current === data.conversationId) return;
+        lastPublishedHashRef.current = null;
+        setMessages([]);
+        setConversationId(data.conversationId ?? null);
+        return;
+      }
+      if (data.type === 'state') {
+        applyIncomingRef.current(data);
+      }
+    };
+
+    // Only ask for another tab's conversation when this tab has nothing of its
+    // own to resume (fresh open) — never clobber a restored session.
+    let hasSavedConversation = false;
+    try {
+      const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        hasSavedConversation =
+          Array.isArray(parsed) && parsed.some((m: ChatMessage) => m && m.role === 'user');
+      }
+    } catch {
+      // best-effort
+    }
+    if (!hasSavedConversation && messagesRef.current.length === 0) {
+      adoptionPendingRef.current = true;
+      try {
+        channel.postMessage({ type: 'request', instanceId: instanceIdRef.current });
+      } catch {
+        // best-effort
+      }
+      // If no sibling tab holds a conversation, stop waiting shortly so this
+      // tab's own fresh welcome can be announced normally.
+      adoptionTimeoutRef.current = setTimeout(() => {
+        adoptionPendingRef.current = false;
+      }, 350);
+    }
+
+    return () => {
+      channelRef.current = null;
+      if (adoptionTimeoutRef.current) {
+        clearTimeout(adoptionTimeoutRef.current);
+        adoptionTimeoutRef.current = null;
+      }
+      try {
+        channel?.close();
+      } catch {
+        // best-effort
+      }
+    };
+  }, []);
 
   // Response language (Sprint 7): default Auto Detect, persisted locally and
   // synced to the authenticated user's server-side preference.
@@ -144,6 +304,34 @@ export function useChat(onNewConversation?: (id: string) => void) {
       }
     }
   }, [conversationId]);
+
+  // Mirror local chat state to sibling tabs (live updates in both directions).
+  // The first render is skipped for a freshly-opened tab so it pulls via
+  // REQUEST instead of announcing an empty state.
+  useEffect(() => {
+    if (skipFirstPublishRef.current) {
+      skipFirstPublishRef.current = false;
+      // A restored tab (saved conversation id from sessionStorage) should still
+      // announce itself rather than sit silently.
+      if (messages.length === 0 && !conversationId) return;
+    }
+    // Pending a REQUEST response: adopt before announcing, or the default
+    // welcome seeded by initializeSession could clobber the live conversation.
+    if (adoptionPendingRef.current) return;
+    const hash = JSON.stringify({ m: messages, c: conversationId });
+    if (lastPublishedHashRef.current === hash) return;
+    lastPublishedHashRef.current = hash;
+    try {
+      channelRef.current?.postMessage({
+        type: 'state',
+        instanceId: instanceIdRef.current,
+        messages,
+        conversationId,
+      });
+    } catch {
+      // best-effort
+    }
+  }, [messages, conversationId]);
 
   // Core streaming helper shared by normal sends and the silent lab-hint send.
   const streamChat = useCallback(async (
@@ -465,6 +653,16 @@ export function useChat(onNewConversation?: (id: string) => void) {
     } catch {
       // best-effort
     }
+    lastPublishedHashRef.current = null;
+    try {
+      channelRef.current?.postMessage({
+        type: 'clear',
+        instanceId: instanceIdRef.current,
+        conversationId: null,
+      });
+    } catch {
+      // best-effort
+    }
   }, []);
 
   const startNewConversation = useCallback(() => {
@@ -483,6 +681,16 @@ export function useChat(onNewConversation?: (id: string) => void) {
         `bt_chat_conversation_${newId}_restoring`,
         'true'
       );
+    } catch {
+      // best-effort
+    }
+    lastPublishedHashRef.current = null;
+    try {
+      channelRef.current?.postMessage({
+        type: 'clear',
+        instanceId: instanceIdRef.current,
+        conversationId: newId,
+      });
     } catch {
       // best-effort
     }
@@ -552,6 +760,11 @@ export function useChat(onNewConversation?: (id: string) => void) {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) return;
 
+    // A BroadcastChannel sync may have already applied the live conversation
+    // (floating window -> newly-opened workspace tab). Never overwrite it with
+    // a fresh greeting; guard the in-flight fetch below the same way.
+    if (messagesRef.current.length > 0) return;
+
     // Restore a previous in-app conversation (e.g. returning from a course
     // page via Browser Back) instead of starting a fresh session.
     if (messages.length === 0) {
@@ -603,6 +816,10 @@ export function useChat(onNewConversation?: (id: string) => void) {
       }
 
       const data = await response.json();
+
+      // A sync landed while the greeting fetch was in flight — keep the live
+      // conversation and drop the greeting.
+      if (messagesRef.current.length > 0) return;
 
       const welcomeMsg: ChatMessage = {
         role: 'assistant',
