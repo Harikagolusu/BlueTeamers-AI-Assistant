@@ -81,6 +81,12 @@ class JWTValidator:
                 "verify_exp": True,
                 "verify_nbf": True,
                 "verify_iat": True,
+                # PyJWT raises InvalidAudienceError whenever a token carries an
+                # ``aud`` claim without an explicit ``audience`` arg. Django
+                # stamps aud/iss on every token, so only enforce those claims
+                # when an issuer/audience is actually configured.
+                "verify_aud": bool(settings.JWT_AUDIENCE),
+                "verify_iss": bool(settings.JWT_ISSUER),
                 "require": ["exp", "iat"],
             }
             verify_kwargs: Dict[str, Any] = {}

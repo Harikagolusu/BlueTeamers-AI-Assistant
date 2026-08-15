@@ -17,6 +17,12 @@ MAX_BODY_BYTES = 2 * 1024 * 1024  # 2 MiB
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
     """Reject requests whose body exceeds a hard cap with 413 before reading it."""
 
+    # Streaming chat endpoints are excluded from body-size re-reading because
+    # Starlette's BaseHTTPMiddleware raises "Unexpected message received:
+    # http.request" when a body-reading middleware wraps a StreamingResponse.
+    # The Content-Length header check above is sufficient for those routes.
+    _SKIP_BODY_READ = frozenset({"/api/chat/", "/api/v1/chat/stream", "/api/v1/chat"})
+
     def __init__(self, app, max_bytes: int = MAX_BODY_BYTES):
         super().__init__(app)
         self.max_bytes = max_bytes
@@ -31,7 +37,7 @@ class MaxBodySizeMiddleware(BaseHTTPMiddleware):
                 )
         # Content-Length may be absent (chunked) — enforce via a size-checked
         # streaming receive that aborts once the cap is exceeded.
-        if request.method in ("POST", "PUT", "PATCH"):
+        if request.method in ("POST", "PUT", "PATCH") and request.url.path not in self._SKIP_BODY_READ:
             body = await request.body()
             if len(body) > self.max_bytes:
                 return JSONResponse(
