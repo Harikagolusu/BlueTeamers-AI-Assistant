@@ -33,35 +33,51 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
     }
   };
 
+  const addFileAsAttachment = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setAttachments((prev) => [
+          ...prev,
+          {
+            name: file.name,
+            type: file.type,
+            content: event.target.result as string,
+          },
+        ]);
+      }
+    };
+
+    // PDFs and images are read as base64 data URLs so the backend can decode
+    // them (PDF text is extracted server-side). Text/log files are read as
+    // plain text so their content is directly analyzable.
+    if (/\.pdf$/i.test(file.name) || file.type.startsWith('image/')) {
+      reader.readAsDataURL(file);
+    } else {
+      reader.readAsText(file);
+    }
+  };
+
+  // Ctrl/Cmd+V paste: any image on the clipboard becomes an image attachment,
+  // so users can paste a screenshot directly instead of picking a file.
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.kind !== 'file') continue;
+      const file = item.getAsFile();
+      if (file && file.type.startsWith('image/')) {
+        e.preventDefault();
+        addFileAsAttachment(file);
+        break;
+      }
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const filesArray = Array.from(e.target.files);
-
-    filesArray.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setAttachments((prev) => [
-            ...prev,
-            {
-              name: file.name,
-              type: file.type,
-              content: event.target.result as string,
-            },
-          ]);
-        }
-      };
-
-      // PDFs and images are read as base64 data URLs so the backend can decode
-      // them (PDF text is extracted server-side). Text/log files are read as
-      // plain text so their content is directly analyzable.
-      if (/\.pdf$/i.test(file.name) || file.type.startsWith('image/')) {
-        reader.readAsDataURL(file);
-      } else {
-        reader.readAsText(file);
-      }
-    });
-
+    filesArray.forEach(addFileAsAttachment);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -167,6 +183,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder="Message BlueTeamers AI..."
           className="bt-mono flex-1 max-h-[200px] min-h-[34px] bg-transparent border-0 resize-none focus:outline-none focus:ring-0 text-sm leading-relaxed p-2 text-foreground placeholder:text-muted-foreground scrollbar-thin scrollbar-thumb-zinc-700"
           rows={1}
