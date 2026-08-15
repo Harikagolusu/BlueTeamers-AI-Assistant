@@ -299,8 +299,8 @@ export const FloatingAssistant: React.FC = () => {
       ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"
       : "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]";
 
-  const handleSend = (text: string) => {
-    sendMessage(text, undefined, undefined, undefined, pageContext);
+  const handleSend = (text: string, attachments?: Array<{ name: string; type: string; content: string }>) => {
+    sendMessage(text, attachments, undefined, undefined, pageContext);
   };
 
   // The backend streams into an empty assistant placeholder message while

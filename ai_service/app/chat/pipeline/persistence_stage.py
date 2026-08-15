@@ -39,7 +39,11 @@ class PersistenceStage(IExecutionStage):
             else:
                 return context
 
-        query = context.metadata.get("query") or ""
+        # Use the user's original query for persistence, NOT the attachment-
+        # enriched one. AttachmentParseStage injects OCR text / a "text-only"
+        # fallback note into `query`, and persisting that would replay the note
+        # into every later turn of the conversation via memory/history.
+        query = context.metadata.get("user_query") or context.metadata.get("query") or ""
         ai_message = response.message or ""
 
         # Streaming engines return a "[Streaming Generator]" placeholder whose

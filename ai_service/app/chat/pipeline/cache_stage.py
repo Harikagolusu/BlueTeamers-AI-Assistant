@@ -4,6 +4,35 @@ from app.models.chat.chat_models import ExecutionResult
 from app.cache.interfaces import ICacheService
 from app.multilingual.languages import is_concrete_code
 
+import hashlib
+import json
+
+
+def _attachment_digest(images: list, files: list) -> str:
+    """Fingerprint attached images/files so a request with attachments is never
+    served a cached text-only answer for the same query text.
+
+    Images are large base64 strings; only hash them instead of embedding them
+    in the key so we avoid building keys that are megabytes long.
+    """
+    digest = hashlib.sha256()
+    digests = []
+    for img in images or []:
+        if isinstance(img, str) and img.startswith("data:"):
+            _, _, b64 = img.partition(",")
+            digests.append(hashlib.sha256(b64.encode("utf-8", "replace")).hexdigest())
+    for f in files or []:
+        if isinstance(f, dict):
+            digests.append(
+                hashlib.sha256(
+                    json.dumps({"name": f.get("name"), "type": f.get("type"), "content": f.get("content")}, sort_keys=True).encode("utf-8", "replace")
+                ).hexdigest()
+            )
+    if digests:
+        digest.update("|".join(digests).encode("utf-8"))
+        return digest.hexdigest()[:16]
+    return ""
+
 class CacheStage(IExecutionStage):
     """Checks semantic cache. If hit, populates execution_result directly."""
     
@@ -39,10 +68,21 @@ class CacheStage(IExecutionStage):
         if not query:
             return context
 
+        # Requests carrying attachments are content-specific: their answer
+        # depends on the uploaded image/file bytes, so they must never be
+        # satisfied from a cache written for a bare-text query. Fold an
+        # attachment fingerprint into the key so identical bytes hit the cache
+        # but different attachments (or none at all) do not.
+        images = context.metadata.get("images") or []
+        files = context.metadata.get("files") or []
+        attachment_fp = _attachment_digest(images, files)
+
         # Identity scope: authenticated user id, else the guest client id, else
         # anonymous. Cache hits must never cross identities.
         scope = context.session_user or (context.metadata.get("client_id") or "") or "anon"
         key = self._key_for(query, context.metadata.get("language", ""), scope=scope)
+        if attachment_fp:
+            key = f"att:{attachment_fp}|{key}"
         cached_response = await self._cache.get(key)
         if cached_response:
             result = ExecutionResult.success(

@@ -16,6 +16,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
   const [attachments, setAttachments] = useState<Array<{ name: string; type: string; content: string }>>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -82,6 +83,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
     if (fileInputRef.current) fileInputRef.current.click();
   };
 
+  const triggerImageSelect = () => {
+    if (imageInputRef.current) imageInputRef.current.click();
+  };
+
   return (
     <div className="flex flex-col w-full bg-zinc-950/80 backdrop-blur-xl border border-primary/20 rounded-full p-1.5 pr-2 shadow-2xl relative">
       {/* Attachments Preview */}
@@ -121,7 +126,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
           accept=".txt,.log,.csv,.json,.xml,.md,.pdf,text/plain"
           className="hidden"
         />
-        
+
+        <input 
+          type="file" 
+          ref={imageInputRef}
+          onChange={handleFileChange}
+          multiple
+          accept="image/*"
+          className="hidden"
+        />
+
+        <button
+          type="button"
+          onClick={triggerImageSelect}
+          className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+          title="Attach images"
+        >
+          <ImageIcon className="w-5 h-5" />
+        </button>
+
         <button
           type="button"
           onClick={triggerFileSelect}

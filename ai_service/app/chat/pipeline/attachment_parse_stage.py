@@ -87,6 +87,13 @@ class AttachmentParseStage(IExecutionStage):
         images: list = context.metadata.get("images") or []
         query: str = context.metadata.get("query", "") or ""
 
+        # Keep the user's original, unmodified request available for
+        # persistence/history stages. The injected OCR/attachment text below
+        # must reach the LLM, but it must never be persisted back into
+        # conversation memory — otherwise the fallback note ("text-only...")
+        # would be replayed into every follow-up turn of the same chat.
+        original_query = context.metadata.get("user_query") or query
+
         sections: list[str] = []
         parsed_files = 0
         skipped_files = 0
@@ -144,6 +151,7 @@ class AttachmentParseStage(IExecutionStage):
         new_metadata = {
             **context.metadata,
             "query": query,
+            "user_query": original_query,
             "attachments_parsed": parsed_files,
             "attachments_skipped": skipped_files,
             "images_present": len(images),
@@ -226,36 +234,121 @@ class AttachmentParseStage(IExecutionStage):
         """Run OCR on an image and return extracted text, or None if none found."""
         raw = AttachmentParseStage._decode_image_bytes(content)
         if not raw:
+            logger.warning("Image attachment could not be decoded from payload.")
             return None
         ocr = _get_ocr()
         if ocr is None:
+            logger.warning("OCR engine unavailable; skipping image text extraction.")
             return None
 
         def _run() -> Optional[str]:
-            try:
-                import cv2
-                import numpy as np
+            import cv2
+            import numpy as np
 
-                nparr = np.frombuffer(raw, np.uint8)
-                # Decode metadata first (no pixel allocation) so a bomb image
-                # declaring huge dimensions is rejected before memory is used.
-                img = cv2.imdecode(nparr, cv2.IMREAD_REDUCED_COLOR_2)
-                if img is None:
-                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                if img is None:
-                    return None
-                if img.size > _MAX_IMAGE_PIXELS:
-                    logger.warning(
-                        "Image exceeds %d pixels; rejected.", _MAX_IMAGE_PIXELS
-                    )
-                    return None
-                result, _ = ocr(img)
-                lines = [r[1] for r in (result or []) if r and len(r) > 1 and r[1]]
+            nparr = np.frombuffer(raw, np.uint8)
+            # Decode metadata first (no pixel allocation) so a bomb image
+            # declaring huge dimensions is rejected before memory is used.
+            img = cv2.imdecode(nparr, cv2.IMREAD_REDUCED_COLOR_2)
+            half_scale = True
+            if img is None:
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                half_scale = False
+            if img is None:
+                logger.warning("Image OCR: cv2 could not decode attachment.")
+                return None
+            if img.size > _MAX_IMAGE_PIXELS:
+                logger.warning(
+                    "Image exceeds %d pixels; rejected.", _MAX_IMAGE_PIXELS
+                )
+                return None
+
+            def _ocr_once(candidate: Any) -> Optional[str]:
+                # Default thresholds (text_score=0.5, box_thresh=0.5) silently
+                # drop low-confidence detections — bad for small/anti-aliased
+                # screenshot text. Loosen them so more lines survive; the
+                # prompt can tolerate a few OCR artifacts more easily than
+                # losing all the text.
+                result, _ = ocr(
+                    candidate,
+                    box_thresh=0.25,
+                    text_score=0.3,
+                    unclip_ratio=1.8,
+                )
+                lines = [
+                    r[1] for r in (result or []) if r and len(r) > 1 and r[1]
+                ]
                 text = "\n".join(lines).strip()
                 return text or None
-            except Exception as e:
-                logger.warning("Image OCR failed: %s", e)
-                return None
+
+            def _upscale(img: Any, factor: float = 2.0) -> Any:
+                try:
+                    return cv2.resize(
+                        img, None, fx=factor, fy=factor,
+                        interpolation=cv2.INTER_CUBIC,
+                    )
+                except Exception:
+                    return img
+
+            text = _ocr_once(img)
+
+            # Fallback passes for images the first OCR call read nothing from:
+            #  - full-resolution decode (half-res reduced pass may blur small text)
+            #  - grayscale + contrast enhancement (screenshots/photos with
+            #    glare or low contrast frequently fail naive color OCR)
+            #  - 2x upscale (large screenshots shrink text below the detector's
+            #    min_height, so doubling size makes lines readable)
+            attempts = []
+            if text:
+                logger.info(
+                    "Image OCR ok (half=%s, chars=%d)", half_scale, len(text)
+                )
+                return text
+
+            if half_scale:
+                attempts.append("full-res")
+                full = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if full is not None and full.size <= _MAX_IMAGE_PIXELS:
+                    text = _ocr_once(full)
+
+            if not text:
+                attempts.append("grayscale-contrast")
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                # Clip high/low percentile so dark-on-dark / washed-out text
+                # becomes legible for the OCR model.
+                try:
+                    gray = cv2.convertScaleAbs(gray, alpha=1.6, beta=10)
+                except Exception:
+                    pass
+                text = _ocr_once(gray)
+
+            if not text:
+                attempts.append("2x-upscale")
+                up = _upscale(img, 2.0)
+                if up.size <= _MAX_IMAGE_PIXELS:
+                    text = _ocr_once(up)
+
+            if text:
+                logger.info(
+                    "Image OCR recovered via fallback (%s), chars=%d",
+                    ",".join(attempts), len(text),
+                )
+                return text
+
+            logger.warning(
+                "Image OCR found no readable text after passes: %s "
+                "(decoded=%sx%s pixels=%d bytes=%d)",
+                ",".join(attempts) or "initial",
+                img.shape[1], img.shape[0], img.size, len(raw),
+            )
+            # Save a copy of the failed frame so the cause can be inspected
+            # (best-effort; safe path only, never user-influential).
+            try:
+                import os
+                p = "/tmp/ai_failed_image.png"
+                cv2.imwrite(p, img)
+            except Exception:
+                pass
+            return None
 
         # CV2 decode + OCR are blocking CPU/IO; never block the event loop.
         return await asyncio.to_thread(_run)

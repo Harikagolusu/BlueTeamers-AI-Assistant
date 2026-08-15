@@ -12,7 +12,12 @@ from app.core.config import settings
 # Reject oversized request bodies before they are buffered into memory. This is
 # the first line of defense against multi-GB JSON chat payloads (thousands of
 # attachments) that the per-attachment caps only see after the full body exists.
-MAX_BODY_BYTES = 2 * 1024 * 1024  # 2 MiB
+#
+# The cap must also fit real image uploads: attachments arrive as base64 data
+# URLs (~1.33x the raw bytes) and a typical phone/desktop screenshot is 1-8 MB
+# decoded. The per-attachment decoder (8 MiB decoded) and the pixel caps are the
+# real memory guards; this is a coarse ceiling against protocol-level abuse.
+MAX_BODY_BYTES = 16 * 1024 * 1024  # 16 MiB
 
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
     """Reject requests whose body exceeds a hard cap with 413 before reading it."""

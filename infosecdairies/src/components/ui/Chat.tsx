@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { User, Trash2, Star, ArrowDown } from 'lucide-react';
 import logo from '@/assets/logo-color.png';
 import { Button } from '@/components/ui/button';
@@ -316,7 +317,12 @@ export const Chat = ({ chatState, conversations }: ChatProps) => {
                           {msg.metadata.suggested_courses.slice(0, 3).map((s: any, sIdx: number) => (
                             <span key={sIdx}>
                               {sIdx > 0 && ', '}
-                              <span className="text-foreground">{s.title}</span>
+                              <Link
+                                to={s.course_url || (s.course_slug ? `/courses/${s.course_slug}` : '#')}
+                                className="no-underline text-foreground hover:text-primary transition-colors"
+                              >
+                                {s.title}
+                              </Link>
                             </span>
                           ))}
                         </p>
