@@ -1,8 +1,7 @@
 class TokenEstimator:
     """
     Placeholder for token estimation. 
-    In production, this could be replaced with `tiktoken` for accurate OpenAI token counts, 
-    or a HuggingFace tokenizer for local LLMs like Ollama.
+    In production, this could be replaced with `tiktoken` for accurate OpenAI token counts.
     """
     @staticmethod
     def estimate_tokens(text: str) -> int:

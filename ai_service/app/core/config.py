@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     DEPLOYMENT MODE (single switch):
       DEVELOPMENT_MODE=true  -> OmniRoute/local models, local MCP, DEBUG logging.
-      DEVELOPMENT_MODE=false -> Amazon Bedrock, production AWS config, INFO logging.
+      DEVELOPMENT_MODE=false -> DeepSeek API, production config, INFO logging.
 
     Environment-specific values derive from this flag unless explicitly set.
     See _apply_mode_defaults.
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Deployment mode. This is THE single switch for development vs production.
     # When true the app behaves as a local development environment (OmniRoute,
     # verbose logging, permissive defaults). When false it behaves as a production
-    # deployment (Amazon Bedrock, restrained logging, secure defaults).
+    # deployment (DeepSeek API, restrained logging, secure defaults).
     DEVELOPMENT_MODE: bool = True
 
     # Derived from DEVELOPMENT_MODE; set automatically (see _apply_mode_defaults).
@@ -72,17 +72,9 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
 
     # LLM provider selection. Resolved per mode when not set explicitly:
-    #   development -> "omniroute", production -> "bedrock".
-    # Allowed values: "omniroute" | "bedrock" | "ollama" | "auto".
+    #   development -> "omniroute", production -> "deepseek".
+    # Allowed values: "omniroute" | "deepseek" | "auto".
     LLM_PROVIDER: Optional[str] = None
-
-    # Local models (development)
-    OLLAMA_BASE_URL: Optional[str] = None
-    OLLAMA_MODEL: str = "deepseek-r1:1.5b"
-
-    # Amazon Bedrock (production)
-    BEDROCK_REGION: Optional[str] = "us-east-1"
-    BEDROCK_MODEL: Optional[str] = "anthropic.claude-3-sonnet-20240229-v1:0"
 
     # OmniRoute (development default)
     OMNIROUTE_API_KEY: Optional[str] = None
@@ -92,8 +84,9 @@ class Settings(BaseSettings):
     # tokens); oc/deepseek-v4-flash-free answers fully and keeps context.
     OMNIROUTE_MODEL: str = "oc/deepseek-v4-flash-free"
 
-    # DeepSeek official API (OpenAI-compatible). Set LLM_PROVIDER=deepseek to
-    # use it. The key lives in .env (gitignored); NEVER hardcode it.
+    # DeepSeek official API (OpenAI-compatible) — the production provider.
+    # Set LLM_PROVIDER=deepseek to use it. The key lives in .env (gitignored);
+    # NEVER hardcode it.
     DEEPSEEK_API_KEY: Optional[str] = None
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
     DEEPSEEK_MODEL: str = "deepseek-v4-flash"
@@ -111,10 +104,6 @@ class Settings(BaseSettings):
     MCP_ENABLED: bool = True
     MCP_SERVERS_CONFIG: Optional[str] = None
     MCP_SERVERS_CONFIG_PATH: str = ""
-
-    # AWS
-    AWS_ACCESS_KEY_ID: Optional[str] = None
-    AWS_SECRET_ACCESS_KEY: Optional[str] = None
 
     # Vector Database
     VECTOR_DB_PATH: str = "./vector_store"
@@ -247,7 +236,7 @@ class Settings(BaseSettings):
         Single source of truth for deployment-mode defaults.
 
         DEVELOPMENT_MODE=true  -> OmniRoute + local models, permissive CORS, DEBUG.
-        DEVELOPMENT_MODE=false -> Amazon Bedrock, INFO logging, secure defaults.
+        DEVELOPMENT_MODE=false -> DeepSeek API, INFO logging, secure defaults.
 
         Any field already provided explicitly via the environment is respected;
         only unset fields are filled with the mode-appropriate value.
@@ -260,13 +249,10 @@ class Settings(BaseSettings):
         self.DEBUG = dev
 
         if not self.LLM_PROVIDER:
-            self.LLM_PROVIDER = "omniroute" if dev else "bedrock"
+            self.LLM_PROVIDER = "omniroute" if dev else "deepseek"
 
         if not self.OMNIROUTE_BASE_URL:
             self.OMNIROUTE_BASE_URL = "http://localhost:20128/v1"
-
-        if not self.OLLAMA_BASE_URL:
-            self.OLLAMA_BASE_URL = "http://localhost:11434"
 
         if not self.LOG_LEVEL:
             self.LOG_LEVEL = "DEBUG" if dev else "INFO"
@@ -294,7 +280,7 @@ class Settings(BaseSettings):
 
     @property
     def is_production(self) -> bool:
-        """True in production mode (Amazon Bedrock deployment)."""
+        """True in production mode (DeepSeek API deployment)."""
         return not self.is_development
 
 

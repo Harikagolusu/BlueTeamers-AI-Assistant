@@ -42,7 +42,7 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 
 - Get a key from https://platform.deepseek.com → API keys → create one.
 - `.env` is gitignored (`ai_service/.gitignore` and root `.gitignore`), so **never commit or push this file**. Anyone who clones the repo gets only `.env.example` with placeholder values.
-- If you want a different provider, the supported values for `LLM_PROVIDER` are `deepseek | omniroute | ollama | bedrock`. Only `deepseek` needs the key above; `omniroute` uses `OMNIROUTE_API_KEY`, `ollama` needs a local runtime, `bedrock` needs `BEDROCK_REGION` + AWS credentials.
+- If you want a different provider, the supported values for `LLM_PROVIDER` are `deepseek | omniroute`. Only `deepseek` needs the key above; `omniroute` uses `OMNIROUTE_API_KEY`.
 
 ## 4. Frontend env (optional)
 

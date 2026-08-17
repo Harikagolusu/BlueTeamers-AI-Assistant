@@ -2,8 +2,6 @@ import logging
 from app.core.config import settings
 from app.llm.base import BaseLLMProvider
 from app.llm.exceptions import ProviderConfigurationException
-from app.llm.providers.ollama_provider import OllamaProvider
-from app.llm.providers.bedrock_provider import BedrockProvider
 
 logger = logging.getLogger("app.llm.factory")
 
@@ -14,10 +12,8 @@ class LLMFactory:
     Implements a singleton pattern to reuse the provider connection pool.
 
     Provider selection is fully configuration-driven:
-      - LLM_PROVIDER=omniroute -> OmniRoute (development default)
       - LLM_PROVIDER=deepseek  -> DeepSeek official API (real API key)
-      - LLM_PROVIDER=bedrock   -> Amazon Bedrock (production default)
-      - LLM_PROVIDER=ollama    -> local Ollama
+      - LLM_PROVIDER=omniroute -> OmniRoute (development default)
       - LLM_PROVIDER=auto      -> resolved from the deployment mode
     """
     _instance: BaseLLMProvider = None
@@ -36,23 +32,20 @@ class LLMFactory:
             f"APP_ENV={app_mode}, deployment_mode={mode}"
         )
 
-        if provider_mode == "ollama":
-            cls._instance = OllamaProvider()
-        elif provider_mode == "bedrock":
-            cls._instance = BedrockProvider()
-        elif provider_mode == "deepseek":
+        if provider_mode == "deepseek":
             from app.llm.providers.deepseek_provider import DeepSeekProvider
             cls._instance = DeepSeekProvider()
         elif provider_mode == "omniroute":
             from app.llm.providers.omniroute_provider import OmniRouteProvider
             cls._instance = OmniRouteProvider()
         elif provider_mode == "auto":
-            # Development uses OmniRoute/local models; production uses Amazon Bedrock.
+            # Development uses OmniRoute; production uses the DeepSeek API.
             if settings.is_development:
                 from app.llm.providers.omniroute_provider import OmniRouteProvider
                 cls._instance = OmniRouteProvider()
             else:
-                cls._instance = BedrockProvider()
+                from app.llm.providers.deepseek_provider import DeepSeekProvider
+                cls._instance = DeepSeekProvider()
         else:
             raise ProviderConfigurationException(
                 f"Unsupported LLM_PROVIDER: {provider_mode}"

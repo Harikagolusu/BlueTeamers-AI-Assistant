@@ -9,7 +9,7 @@ This microservice supports:
 - Sentence Transformers Embedding Service
 - Automated Document Chunking Pipelines
 - Context & Prompt Builder Utilities
-- Provider-agnostic LLM Abstraction (Ollama, AWS Bedrock)
+- Provider-agnostic LLM Abstraction (OmniRoute, DeepSeek)
 - Deep Health Monitoring & Telemetry
 - JWT Authentication Integration
 - Structured Request Logging
@@ -36,7 +36,7 @@ FastAPI AI Service
       ├── Retriever           # Connects to Vector Stores (FAISS) to fetch metadata & indices
       ├── Context Builder     # Formats and enforces token budgets on retrieved docs
       ├── Prompt Builder      # Merges context with robust LLM system instructions
-      ├── LLM Provider        # Standardized abstraction for Ollama / AWS Bedrock
+      ├── LLM Provider        # Standardized abstraction for OmniRoute / DeepSeek
       └── Vector Store        # FAISS implementation mapped with a JSON Metadata Store
 ```
 
@@ -103,8 +103,7 @@ ai_service/app/
 | **Validation** | Pydantic V2 | Settings & Schema validation |
 | **Vector DB** | FAISS | In-memory similarity search |
 | **Embeddings** | Sentence Transformers | Local semantic vectorization |
-| **LLM (Local)** | Ollama | Local development inference |
-| **LLM (Cloud)** | AWS Bedrock | *Planned optional cloud fallback* |
+| **LLM (Cloud)** | OmniRoute / DeepSeek | Cloud inference |
 | **Testing** | Pytest | Unit & Integration testing |
 
 ---
@@ -153,11 +152,7 @@ Update `.env` with your secure configuration parameters.
 | `DJANGO_API_URL` | Upstream Django API endpoint | **Yes** | - |
 | `POSTGRES_URL` | Database connection string | **Yes** | - |
 | `REDIS_URL` | Cache connection string | **Yes** | - |
-| `LLM_PROVIDER` | `ollama` or `bedrock` | No | auto |
-| `OLLAMA_BASE_URL` | Local LLM host | No | http://localhost:11434 |
-| `OLLAMA_MODEL` | Local LLM Model identifier | No | llama3 |
-| `BEDROCK_REGION` | AWS Bedrock deployment region | No | us-east-1 |
-| `BEDROCK_MODEL` | AWS Bedrock model identifier | No | anthropic.claude-3... |
+| `LLM_PROVIDER` | `omniroute` or `deepseek` | No | auto |
 | `VECTOR_DB_PATH`| FAISS index location | No | ./vector_store |
 | `CHUNK_SIZE` | Max text chunk size | No | 600 |
 | `CHUNK_OVERLAP` | Overlap window between chunks | No | 120 |
@@ -217,7 +212,7 @@ The service leverages a highly decoupled, state-isolated configuration via Pydan
 - **CORS**: Securely managed via `CORS_ORIGINS`. Defaults to `["*"]` for development.
 - **Logging**: Globally managed in `app/core/logging.py`, leveraging sub-millisecond JSON metrics and Request UUIDs payload injection, guaranteeing no PII or secure tokens are logged natively.
 - **JWT**: Authenticates strictly against the underlying Django REST API architecture's secrets.
-- **LLM Provider**: Interface abstraction manages seamless hot-swapping between `OllamaProvider` (local offline AI) and `AWSBedrockProvider` using `LLM_PROVIDER`.
+- **LLM Provider**: Interface abstraction manages seamless hot-swapping between the OmniRoute and DeepSeek providers using `LLM_PROVIDER`.
 - **Vector Store**: Natively couples unstructured `FAISS` indexing alongside structural JSON `metadata.json` stores for rich data traversal.
 
 ---
@@ -225,7 +220,7 @@ The service leverages a highly decoupled, state-isolated configuration via Pydan
 ## Design Principles
 
 This project was built from the ground up prioritizing enterprise stability:
-- **Clean Architecture**: Hard boundaries exist between the API routers, the RAG orchestration, and the I/O providers (FAISS, Ollama).
+- **Clean Architecture**: Hard boundaries exist between the API routers, the RAG orchestration, and the I/O providers (FAISS, LLM providers).
 - **SOLID Principles**: Components utilize strict interfaces (`BaseRetriever`, `BaseLLMProvider`), allowing hot-swapping integrations without refactoring business logic.
 - **Dependency Injection**: FastAPI `Depends()` is utilized universally. No services instantiate their own dependencies internally, ensuring native testability.
 - **Stateless Services**: All state is localized to the Request Context, making the application 100% horizontally scalable.

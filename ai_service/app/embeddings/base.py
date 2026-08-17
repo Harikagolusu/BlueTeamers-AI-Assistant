@@ -4,8 +4,8 @@ from typing import List, Dict, Any
 class BaseEmbeddingProvider(ABC):
     """
     Abstract interface for embedding generation.
-    Decouples the core application logic from the underlying model (e.g., SentenceTransformers, 
-    AWS Bedrock, OpenAI). Complies strictly with the Open/Closed Principle.
+    Decouples the core application logic from the underlying model (e.g., SentenceTransformers,
+    OpenAI). Complies strictly with the Open/Closed Principle.
     """
     
     @abstractmethod

@@ -137,8 +137,8 @@ def get_chat_service() -> IChatService:
       CompositionStage, PersistenceStage]
 
     Engine routing (via IntentAnalysisStage -> RoutePlanningStage):
-      GENERAL_CHAT / GREETING -> GeneralExecutionEngine -> OllamaProvider
-      RAG_QUERY               -> RagExecutionEngine -> FAISSRetriever + OllamaProvider
+      GENERAL_CHAT / GREETING -> GeneralExecutionEngine -> LLMProvider
+      RAG_QUERY               -> RagExecutionEngine -> FAISSRetriever + LLMProvider
       TOOL_REQUEST            -> ToolExecutionEngine -> LocalToolExecutor
       * (any other)           -> AgentExecutor (walks the plan DAG)
     """
