@@ -235,6 +235,16 @@ All colors MUST be HSL.
   font-family: "Inter", system-ui, -apple-system, sans-serif;
 }
 
+/* Hide the native scrollbar on the chat input while keeping text scrollable. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Floating window user messages: restore the workspace user-bubble text color
    (foreground cyan-white) instead of the greyed prose-zinc body color, while
    keeping the mono font and no glow. */

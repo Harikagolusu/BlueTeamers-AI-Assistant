@@ -122,13 +122,16 @@ class DeepSeekProvider(BaseLLMProvider):
                 text = choices[0].get("message", {}).get("content", "")
 
             usage = data.get("usage", {})
+            finish_reason = choices[0].get("finish_reason", "stop") if choices else "stop"
+            if finish_reason == "length" and text:
+                text += self.TRUNCATION_NOTICE
 
             return LLMResponse(
                 text=text,
                 provider=self.provider_name,
                 model=self.model,
                 latency_ms=latency,
-                finish_reason=choices[0].get("finish_reason", "stop") if choices else "stop",
+                finish_reason=finish_reason,
                 usage={
                     "prompt_eval_count": usage.get("prompt_tokens", 0),
                     "eval_count": usage.get("completion_tokens", 0),
@@ -155,6 +158,13 @@ class DeepSeekProvider(BaseLLMProvider):
             logger.error(f"LLM Unexpected Error - ReqID: {req_id} - Error: {str(e)}")
             raise LLMException(f"Unexpected error in DeepSeek provider: {str(e)}")
 
+    # Emitted when a streamed reply is hard-truncated by the max_tokens cap, so
+    # the UI shows a clear notice instead of silently stopping mid-sentence.
+    TRUNCATION_NOTICE = (
+        "\n\n_[⚠️ This reply hit the token limit and was cut off. "
+        "Reply \"continue\" to get the rest.]_"
+    )
+
     async def stream_generate(self, request: LLMRequest) -> AsyncGenerator[str, None]:
         req_id = request_id_var.get()
         payload = {
@@ -169,6 +179,7 @@ class DeepSeekProvider(BaseLLMProvider):
         logger.info(f"LLM Stream Request - Provider: {self.provider_name} - Model: {self.model} - ReqID: {req_id}")
 
         try:
+            finish_reason = None
             async with self.client.stream("POST", "/chat/completions", json=payload) as response:
                 response.raise_for_status()
                 async for chunk in response.aiter_lines():
@@ -187,12 +198,20 @@ class DeepSeekProvider(BaseLLMProvider):
                                 )
                             choices = data.get("choices", [])
                             if choices and len(choices) > 0:
+                                # The final chunk carries finish_reason
+                                # ("stop" | "length") so we can detect replies
+                                # truncated by the max_tokens cap.
+                                fr = choices[0].get("finish_reason")
+                                if fr:
+                                    finish_reason = fr
                                 delta = choices[0].get("delta", {})
                                 content = delta.get("content", "")
                                 if content:
                                     yield content
                         except json.JSONDecodeError:
                             continue
+            if finish_reason == "length":
+                yield self.TRUNCATION_NOTICE
         except httpx.ReadTimeout:
             raise LLMTimeoutException("DeepSeek streaming timed out")
         except httpx.ConnectError:

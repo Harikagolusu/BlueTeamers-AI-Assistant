@@ -185,7 +185,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onStop, isL
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           placeholder="Message BlueTeamers AI..."
-          className="bt-mono flex-1 max-h-[200px] min-h-[34px] bg-transparent border-0 resize-none focus:outline-none focus:ring-0 text-sm leading-relaxed p-2 text-foreground placeholder:text-muted-foreground scrollbar-thin scrollbar-thumb-zinc-700"
+          className="bt-mono flex-1 max-h-[200px] min-h-[34px] bg-transparent border-0 resize-none focus:outline-none focus:ring-0 text-sm leading-relaxed p-2 text-foreground placeholder:text-muted-foreground scrollbar-hide"
           rows={1}
           disabled={isLoading}
         />

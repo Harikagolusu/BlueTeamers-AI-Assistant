@@ -30,6 +30,33 @@ def _resolve_max_tokens(explicit) -> int | None:
     return explicit or settings.LLM_MAX_TOKENS
 
 
+def _with_output_budget(system_prompt: str | None) -> str | None:
+    """Append an output-budget instruction when a global token cap is set.
+
+    The cap (LLM_MAX_TOKENS) hard-stops generation at N tokens, which leaves
+    long answers cut off mid-sentence. Telling the model its budget up front
+    makes it plan a concise answer that fits, instead of discovering the cap
+    when it hits it. Skipped when no cap is configured.
+    """
+    cap = settings.LLM_MAX_TOKENS
+    if not cap:
+        return system_prompt
+    # Rough token->word heuristic (English ~0.75 words/token); stay safely
+    # under the hard cap so the model finishes, not just approaches it.
+    word_target = max(40, int(cap * 0.6))
+    budget_note = (
+        f"\n\nOUTPUT BUDGET: Your entire reply must be COMPLETE and fit within "
+        f"approximately {word_target} words (about {cap} tokens). Plan the "
+        f"answer so it finishes within this budget: be concise, prefer short "
+        f"bullet points over long paragraphs, and prioritize the most important "
+        f"points. NEVER stop mid-sentence; if you are running out of room, "
+        f"wrap up with a brief conclusion rather than leaving the reply cut off."
+    )
+    if system_prompt:
+        return system_prompt + budget_note
+    return budget_note.lstrip()
+
+
 class LLMProviderAdapter(ILLMService):
     """
     Adapts a BaseLLMProvider to the ILLMService interface expected by
@@ -50,7 +77,7 @@ class LLMProviderAdapter(ILLMService):
         request = LLMRequest(
             prompt=prompt,
             temperature=kwargs.get("temperature", 0.7),
-            system_prompt=kwargs.get("system_prompt", None),
+            system_prompt=_with_output_budget(kwargs.get("system_prompt", None)),
             max_tokens=_resolve_max_tokens(kwargs.get("max_tokens")),
             images=normalize_images(kwargs.get("images")),
         )
@@ -63,7 +90,7 @@ class LLMProviderAdapter(ILLMService):
         request = LLMRequest(
             prompt=prompt,
             temperature=kwargs.get("temperature", 0.7),
-            system_prompt=kwargs.get("system_prompt", None),
+            system_prompt=_with_output_budget(kwargs.get("system_prompt", None)),
             max_tokens=_resolve_max_tokens(kwargs.get("max_tokens")),
             stream=True,
             images=normalize_images(kwargs.get("images")),
