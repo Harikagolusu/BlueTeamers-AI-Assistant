@@ -266,9 +266,10 @@ class Settings(BaseSettings):
         if not dev:
             if not self.CORS_ORIGINS or self.CORS_ORIGINS == ["*"]:
                 raise ValueError(
-                    "Production requires explicit CORS_ORIGINS (e.g. "
-                    '"https://www.infosecdairies.io,https://infosecdairies.io"). '
-                    "Wildcard or empty is not allowed with credentials."
+                    "Production requires explicit CORS_ORIGINS as a JSON list "
+                    'string, e.g. CORS_ORIGINS=\'["https://www.infosecdairies.io",'
+                    '"https://infosecdairies.io"]\'. Wildcard or empty is not '
+                    "allowed with credentials."
                 )
 
         return self
