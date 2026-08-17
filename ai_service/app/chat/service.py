@@ -1,5 +1,18 @@
 from typing import AsyncGenerator, List, Optional, Union
 
+from app.chat.interfaces.i_chat_service import IChatService
+from app.chat.interfaces.i_chat_orchestrator import IChatOrchestrator
+from app.models.chat.chat_models import ChatRequest, ChatResponse
+from app.chat.context.execution_context import ExecutionContext
+from app.memory.interfaces import IMemoryManager
+from app.conversations.service import ConversationService
+from app.core.config import settings
+import uuid
+import logging
+
+from app.security.auth import resolve_user_identity
+from app.chat.sanitize import clean_response
+
 
 def _tokenize_preserving_newlines(text: str) -> List[str]:
     """Splits text into word tokens while keeping line breaks as tokens.
@@ -15,18 +28,7 @@ def _tokenize_preserving_newlines(text: str) -> List[str]:
             if word:
                 tokens.append(word + " ")
     return tokens
-from app.chat.interfaces.i_chat_service import IChatService
-from app.chat.interfaces.i_chat_orchestrator import IChatOrchestrator
-from app.models.chat.chat_models import ChatRequest, ChatResponse
-from app.chat.context.execution_context import ExecutionContext
-from app.memory.interfaces import IMemoryManager
-from app.conversations.service import ConversationService
-from app.core.config import settings
-import uuid
-import logging
 
-from app.security.auth import resolve_user_identity
-from app.chat.sanitize import clean_response
 
 logger = logging.getLogger("app.chat.service")
 

@@ -65,9 +65,6 @@ def setup_middlewares(app: FastAPI):
     - Request ID, Timing, and Structured Logging Middleware
     """
 
-    # Reject oversized bodies first (outermost).
-    app.add_middleware(MaxBodySizeMiddleware)
-
     # Register CORS
     app.add_middleware(
         CORSMiddleware,
@@ -89,3 +86,7 @@ def setup_middlewares(app: FastAPI):
     from app.runtime.dependencies import get_runtime_manager
     runtime_manager = get_runtime_manager()
     app.add_middleware(RuntimeMiddleware, runtime_manager=runtime_manager)
+
+    # MaxBodySize registered LAST so Starlette wraps it outermost: oversized
+    # bodies are rejected (413) before CORS/logging/observability run.
+    app.add_middleware(MaxBodySizeMiddleware)

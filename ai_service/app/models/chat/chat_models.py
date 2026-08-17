@@ -8,7 +8,7 @@ class ExecutionStatus(str, Enum):
     FAILED = "FAILED"
     BLOCKED = "BLOCKED"
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import ConfigDict
 
 class ExecutionResult(BaseModel):
     """

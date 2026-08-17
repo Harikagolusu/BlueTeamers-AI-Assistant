@@ -69,7 +69,7 @@ class LearningCoachAgent(BaseAgent):
     async def execute_tools(self, tools: List[Any]) -> None:
         import time
         from datetime import datetime, timezone
-        from app.agents.learning_coach.models import JourneyTransition, LearningJourneyState
+        from app.agents.learning_coach.models import JourneyTransition
 
         # Step 1: Understand Learner & Goals
         async def step_understand(ctx):

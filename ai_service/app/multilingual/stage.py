@@ -17,7 +17,10 @@ circular import when ``app.multilingual.*`` is imported before ``app.chat``
 (exactly as bootstrap + pipeline stage modules chain through app.chat.router).
 """
 import logging
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
+
+if TYPE_CHECKING:  # pragma: no cover - import-time only
+    from app.chat.context.execution_context import ExecutionContext
 
 from app.multilingual.dependencies import (
     get_language_detector,
@@ -55,8 +58,6 @@ class LanguageContextStage:
         self._store = store or get_language_preference_store()
 
     async def execute(self, context) -> "ExecutionContext":
-        from app.chat.context.execution_context import ExecutionContext
-
         new_memory = dict(context.memory) if context.memory else {}
 
         query = context.metadata.get("query") or ""

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Optional, Tuple
 from app.prompts.registry import PromptRegistry
 from app.prompts.models import PromptVersion
 

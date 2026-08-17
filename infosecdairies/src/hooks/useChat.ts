@@ -763,7 +763,14 @@ export function useChat(onNewConversation?: (id: string) => void) {
     // A BroadcastChannel sync may have already applied the live conversation
     // (floating window -> newly-opened workspace tab). Never overwrite it with
     // a fresh greeting; guard the in-flight fetch below the same way.
-    if (messagesRef.current.length > 0) return;
+    //
+    // Use the render-time `messages` here, NOT messagesRef: this callback is
+    // recreated whenever messages.length changes, so after "New Chat" clears
+    // the thread the Chat effect re-runs this with an EMPTY snapshot, while
+    // messagesRef may still hold the previous conversation (its sync effect
+    // lives in the provider and runs after this child's effect). Reading the
+    // stale ref made New Chat skip seeding the welcome until a page refresh.
+    if (messages.length > 0) return;
 
     // Restore a previous in-app conversation (e.g. returning from a course
     // page via Browser Back) instead of starting a fresh session.
