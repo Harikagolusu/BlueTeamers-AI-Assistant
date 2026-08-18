@@ -7,10 +7,11 @@
  * conversation continues seamlessly between the two surfaces.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChatMarkdown } from "@/components/ui/chat/ChatMarkdown";
 import {
+  ArrowDown,
   Brain,
   X,
   Minimize2,
@@ -107,6 +108,15 @@ export const FloatingAssistant: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const nearBottomRef = useRef(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const scrollToBottom = useCallback(() => {
+    const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
+    if (viewport) {
+      (viewport as HTMLElement).scrollTop = (viewport as HTMLElement).scrollHeight;
+      setShowScrollToBottom(false);
+    }
+  }, []);
   const isGuest = !isAuthenticated;
 
   // Draggable launcher position (persisted so it survives page navigation).
@@ -273,13 +283,34 @@ export const FloatingAssistant: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // Keep the message list scrolled to the latest message.
+  // Keep the message list scrolled to the latest message, but only when the
+  // user is already near the bottom — if they've scrolled up to read history,
+  // don't yank them back down.
   useEffect(() => {
     const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
-    if (viewport) {
+    if (viewport && nearBottomRef.current) {
       (viewport as HTMLElement).scrollTop = (viewport as HTMLElement).scrollHeight;
+      setShowScrollToBottom(false);
     }
   }, [messages, isLoading]);
+
+  // Track whether the user has scrolled up from the latest message so we can
+  // show the jump-to-latest arrow (mirrors the full workspace Chat.tsx). The
+  // viewport only exists while the window is open, so re-attach then. The
+  // initial near-bottom reset keeps a freshly-opened window pinned at the end.
+  useEffect(() => {
+    nearBottomRef.current = true;
+    if (!isOpen) return;
+    const viewport = scrollRef.current?.querySelector("[data-radix-scroll-area-viewport]");
+    if (!viewport) return;
+    const onScroll = () => {
+      const el = viewport as HTMLElement;
+      nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+      setShowScrollToBottom(!nearBottomRef.current);
+    };
+    viewport.addEventListener("scroll", onScroll, { passive: true });
+    return () => viewport.removeEventListener("scroll", onScroll);
+  }, [isOpen]);
 
   // Guests are always on the free tier — even when the access status fetch
   // fails (access === null), do NOT present them as premium/unlimited. Fail
@@ -454,8 +485,9 @@ export const FloatingAssistant: React.FC = () => {
         </div>
 
         {/* Messages */}
-        <ScrollArea className="min-h-0 flex-1" ref={scrollRef}>
-          <div className="flex flex-col gap-3 px-3 py-3">
+        <div className="relative min-h-0 flex-1">
+          <ScrollArea className="h-full" ref={scrollRef}>
+            <div className="flex flex-col gap-3 px-3 py-3">
             {messages.length === 0 && !isLoading && (
               <div className="mx-auto mt-6 max-w-[240px] text-center">
                 <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
@@ -554,7 +586,24 @@ export const FloatingAssistant: React.FC = () => {
               </div>
             )}
           </div>
-        </ScrollArea>
+          </ScrollArea>
+
+          {/* Jump-to-latest arrow, shown only when scrolled up */}
+          {showScrollToBottom && (
+            <div className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={scrollToBottom}
+                title="Jump to latest"
+                aria-label="Jump to latest message"
+                className="h-8 w-8 rounded-full border-border bg-background/80 backdrop-blur-md shadow-lg hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Free-limit ticket tray: one ticket per free message. Using one
             punches a hole in it; out of tickets means out of free messages. */}
