@@ -14,7 +14,7 @@ from app.observability.service_health import ObservabilityHealthService
 from app.observability.dependencies import get_observability_health_service
 from app.guardrails.domain.services.guardrails_service import GuardrailsService
 from app.guardrails.dependencies import get_guardrails_service
-from app.api.dependencies import get_django_client, require_internal_token
+from app.api.dependencies import get_django_client, require_internal_token, has_internal_token
 import httpx
 
 router = APIRouter(tags=["Health"])
@@ -27,9 +27,19 @@ async def health_check(
     streaming_health: StreamingHealthService = Depends(get_streaming_health_service),
     cache_health: CacheHealthService = Depends(get_cache_health_service),
     obs_health: ObservabilityHealthService = Depends(get_observability_health_service),
-    guardrails_service: GuardrailsService = Depends(get_guardrails_service)
+    guardrails_service: GuardrailsService = Depends(get_guardrails_service),
+    _internal: bool = Depends(has_internal_token),
 ):
-    """Aggregated health for the AI service, exposed under /api for the frontend."""
+    """
+    Aggregated health for the AI service, exposed under /api for the frontend.
+
+    Anonymous callers get only a liveness probe (``{"status": "ok"}``); the
+    detailed component/dependency/observability/guardrails payload requires a
+    valid internal admin token, so health checks cannot leak internal
+    architecture, db paths, or policy names to unauthenticated clients.
+    """
+    if not _internal:
+        return {"status": "ok"}
     return await compute_aggregated_health(
         chat_health, rag_health, memory_health, streaming_health,
         cache_health, obs_health, guardrails_service

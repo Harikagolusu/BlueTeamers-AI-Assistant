@@ -13,13 +13,25 @@ def test_metrics_endpoint():
     assert "ai_llm_requests_total" in response.text
 
 def test_health_endpoint_includes_observability():
-    """Test that the aggregated health endpoint includes observability status."""
-    response = client.get("/health")
+    """Test that the aggregated health endpoint includes observability status.
+    The detailed payload is restricted to callers bearing the internal token."""
+    from app.core.config import settings
+    settings.INTERNAL_ADMIN_TOKEN = "test-internal-token"
+    headers = {"X-Internal-Token": "test-internal-token"}
+    response = client.get("/health", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "observability" in data["components"]
     assert data["components"]["observability"]["metrics"] == "healthy"
     assert data["components"]["observability"]["tracing"] == "healthy"
+
+def test_health_endpoint_anonymous_does_not_leak_components():
+    """Unauthenticated health probes return only a liveness marker."""
+    from app.core.config import settings
+    settings.INTERNAL_ADMIN_TOKEN = "test-internal-token"
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 def test_tracing_middleware():
     """Test that the tracing middleware injects X-Trace-ID."""

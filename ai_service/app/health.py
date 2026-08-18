@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from typing import Dict, Any
 
 from app.core.config import settings
+from app.api.dependencies import has_internal_token
 from app.rag.health import RAGHealthService
 from app.rag.dependencies import get_rag_health_service
 from app.chat.health import ChatHealthService
@@ -20,10 +21,16 @@ from app.guardrails.dependencies import get_guardrails_service
 router = APIRouter(tags=["Health"])
 
 @router.get("/", response_model=Dict[str, Any])
-async def root():
+async def root(_internal: bool = Depends(has_internal_token)):
     """
     Service information endpoint.
+
+    Only callers bearing a valid internal admin token see version/environment
+    details; anonymous probes get a bare liveness payload so version, env and
+    docs presence are not disclosed to unauthenticated reconnaissance.
     """
+    if not _internal:
+        return {"status": "ok"}
     return {
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
@@ -40,11 +47,18 @@ async def aggregated_health(
     streaming_health: StreamingHealthService = Depends(get_streaming_health_service),
     cache_health: CacheHealthService = Depends(get_cache_health_service),
     obs_health: ObservabilityHealthService = Depends(get_observability_health_service),
-    guardrails_service: GuardrailsService = Depends(get_guardrails_service)
+    guardrails_service: GuardrailsService = Depends(get_guardrails_service),
+    _internal: bool = Depends(has_internal_token),
 ):
     """
     Aggregated health check endpoint for the entire application.
+
+    The full component/dependency/observability/guardrails breakdown is
+    restricted to callers presenting a valid internal admin token; anonymous
+    callers receive only a minimal ``{"status": "ok"}`` liveness probe.
     """
+    if not _internal:
+        return {"status": "ok"}
     return await compute_aggregated_health(
         chat_health, rag_health, memory_health, streaming_health,
         cache_health, obs_health, guardrails_service

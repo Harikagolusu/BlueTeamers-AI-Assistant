@@ -91,3 +91,29 @@ def require_internal_token(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Forbidden: valid internal token required.",
     )
+
+
+def has_internal_token(
+    request: Request,
+    x_internal_token: str = Header(default=""),
+) -> bool:
+    """Whether the caller presented a valid internal admin token.
+
+    Unlike :func:`require_internal_token` this never short-circuits in
+    development and never raises: it is used to gate *detailed* (info-heavy)
+    health payloads behind an explicit token while still answering public
+    health probes with a minimal ``{"status": "ok"}``. Keeping the dev bypass
+    out of scope here matters because development environments are the most
+    commonly exposed and were the exact target of the information-disclosure
+    finding.
+    """
+    from app.core.config import settings
+
+    configured = (settings.INTERNAL_ADMIN_TOKEN or "").strip()
+    if not configured:
+        return False
+    auth = request.headers.get("authorization", "")
+    candidate = (x_internal_token or "").strip()
+    if auth.lower().startswith("bearer "):
+        candidate = auth[7:].strip()
+    return bool(candidate) and secrets.compare_digest(candidate, configured)

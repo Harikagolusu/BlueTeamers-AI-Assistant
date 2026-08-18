@@ -9,20 +9,55 @@ def client():
     with TestClient(app) as test_client:
         yield test_client
 
-def test_root_endpoint(client):
+def _with_token():
+    from app.core.config import settings
+    settings.INTERNAL_ADMIN_TOKEN = "test-internal-token"
+    return {"X-Internal-Token": "test-internal-token"}
+
+def test_root_endpoint_anonymous_minimal(client):
     response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+def test_root_endpoint_detailed_with_token(client):
+    response = client.get("/", headers=_with_token())
     assert response.status_code == 200
     data = response.json()
     assert "service" in data
     assert "version" in data
     assert data["status"] == "online"
 
-def test_health_endpoint(client):
+def test_health_endpoint_anonymous_minimal(client):
+    """Unauthenticated health probes must not leak internals (info disclosure)."""
     response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+def test_health_endpoint_detailed_with_token(client):
+    response = client.get("/health", headers=_with_token())
     assert response.status_code == 200
     data = response.json()
     assert "status" in data
     assert "components" in data
+
+def test_api_health_endpoint_anonymous_minimal(client):
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+def test_api_health_endpoint_detailed_with_token(client):
+    response = client.get("/api/health", headers=_with_token())
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert "components" in data
+
+def test_health_detail_requires_valid_token(client):
+    from app.core.config import settings
+    settings.INTERNAL_ADMIN_TOKEN = "test-internal-token"
+    response = client.get("/health", headers={"X-Internal-Token": "wrong-token"})
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 def test_middleware_request_id(client):
     response = client.get("/")
