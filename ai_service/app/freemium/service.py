@@ -52,6 +52,13 @@ class FreemiumService:
         raw = getattr(settings, "FREEMIUM_PREMIUM_PURCHASE_STATUSES", "paid")
         return {s.strip().lower() for s in raw.split(",") if s.strip()}
 
+    def _guests_ip_keyed(self) -> bool:
+        return bool(getattr(settings, "FREEMIUM_GUEST_IP_KEYED", True))
+
+    @staticmethod
+    def _is_guest(user_id: str) -> bool:
+        return str(user_id or "").startswith("guest:")
+
     # ------------------------------------------------------------------ access
     async def is_premium(self, user_id: str, token: str) -> bool:
         """Whether the user holds at least one paid course purchase."""
@@ -86,7 +93,11 @@ class FreemiumService:
             logger.warning(f"Failed to carry guest usage for {user_id}: {e}")
 
     async def get_access_status(
-        self, user_id: str, token: str, client_id: Optional[str] = None
+        self,
+        user_id: str,
+        token: str,
+        client_id: Optional[str] = None,
+        client_ip: Optional[str] = None,
     ) -> AccessStatus:
         """Full access summary for the current user. When an authenticated user
         supplies a ``client_id`` (their pre-login guest identity), any usage
@@ -126,24 +137,40 @@ class FreemiumService:
                 reset_at=None,
             )
         usage: UsageState = await self._store.load(user_id)
+        used = usage.used
+        remaining = max(0, limit - used)
+        # Guests also share a per-IP daily allowance; report the most
+        # restrictive of the client_id and IP buckets so the UI never promises
+        # messages the server will refuse, and rotating the client id cannot
+        # show a fresh quota once the network's allowance is spent.
+        if self._guests_ip_keyed() and self._is_guest(user_id) and client_ip:
+            ip_usage: UsageState = await self._store.load(f"ip:{client_ip}")
+            ip_remaining = max(0, limit - ip_usage.used)
+            if ip_remaining < remaining:
+                remaining = ip_remaining
+                used = limit - remaining
         return AccessStatus(
             access_level=AccessLevel.FREE,
             is_premium=False,
             enabled=True,
             limit=limit,
-            used=usage.used,
-            remaining=max(0, limit - usage.used),
+            used=used,
+            remaining=remaining,
             reset_at=usage.reset,
         )
 
     async def check_and_consume(
-        self, user_id: str, token: str, client_id: Optional[str] = None
+        self,
+        user_id: str,
+        token: str,
+        client_id: Optional[str] = None,
+        client_ip: Optional[str] = None,
     ) -> AccessDecision:
         """Validate and (for free users) consume one message slot.
 
         Raises FreemiumLimitExceeded when a free user is out of messages.
         """
-        status = await self.get_access_status(user_id, token, client_id)
+        status = await self.get_access_status(user_id, token, client_id, client_ip)
         if not status.enabled or status.is_premium:
             return AccessDecision(allowed=True, status=status)
         if not user_id:
@@ -152,19 +179,36 @@ class FreemiumService:
             # have been rejected at the API layer; if one reaches this point,
             # treat it as a denied free user rather than an unlimited one.
             raise FreemiumLimitExceeded(status)
+        limit = status.limit
+        # Guests consume from the per-IP daily bucket first: anchor the
+        # allowance to a server-derived signal the client cannot rotate, so a
+        # fabricated/rotated client_id yields no new quota for the same network.
+        ip_key = None
+        if self._guests_ip_keyed() and self._is_guest(user_id) and client_ip:
+            ip_key = f"ip:{client_ip}"
+            ip_used = await self._store.increment_if_under(ip_key, limit)
+            if ip_used is None:
+                raise FreemiumLimitExceeded(status)
         # Atomic consume: the check "used < limit" and the increment happen as a
         # single SQL statement, so concurrent requests cannot overshoot the
         # daily allowance (no check-then-act window).
-        used = await self._store.increment_if_under(user_id, status.limit)
+        used = await self._store.increment_if_under(user_id, limit)
         if used is None:
             raise FreemiumLimitExceeded(status)
+        remaining = max(0, limit - used)
+        if ip_key is not None:
+            # Report the effective (most restrictive) allowance for display.
+            ip_remaining = max(0, limit - ip_used)
+            if ip_remaining < remaining:
+                remaining = ip_remaining
+                used = limit - remaining
         status = AccessStatus(
             access_level=status.access_level,
             is_premium=status.is_premium,
             enabled=status.enabled,
             limit=status.limit,
             used=used,
-            remaining=max(0, status.limit - used),
+            remaining=remaining,
             reset_at=status.reset_at,
         )
         return AccessDecision(allowed=True, status=status)

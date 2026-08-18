@@ -179,6 +179,12 @@ class Settings(BaseSettings):
     FREEMIUM_PREMIUM_PURCHASE_STATUSES: str = "paid"
     # Feature flag for the /chat full-workspace premium gate.
     FREEMIUM_PREMIUM_CHAT_GATE: bool = True
+    # Anchor the anonymous (guest) allowance to the caller's source IP as well
+    # as their client_id. Rotating a client-supplied id can then never mint a
+    # fresh daily quota; each network gets at most FREEMIUM_FREE_MESSAGE_LIMIT
+    # free messages per window. Disable only if all clients legitimately share
+    # one IP (e.g. the AI service is unreachable from the public internet).
+    FREEMIUM_GUEST_IP_KEYED: bool = True
     # Filesystem path for the SQLite freemium usage store.
     FREEMIUM_DB_PATH: str = "data/freemium.db"
 

@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => ({
         target: "http://127.0.0.1:8001",
         changeOrigin: true,
         secure: false,
+        xfwd: true,
       },
       "/api/conversations": {
         target: "http://127.0.0.1:8001",

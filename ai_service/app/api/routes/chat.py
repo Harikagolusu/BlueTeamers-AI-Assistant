@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from fastapi.exceptions import HTTPException
 
@@ -8,6 +8,7 @@ from app.models.chat.chat_models import ChatRequest, ChatResponse
 from app.chat.interfaces.i_chat_service import IChatService
 from app.api.dependencies import get_optional_raw_token
 from app.freemium.dependencies import get_freemium_service_singleton
+from app.freemium.ip import extract_client_ip
 from app.freemium.models import AccessStatus, FreemiumLimitExceeded
 from app.freemium.service import FreemiumService
 from app.security.auth import resolve_user_identity
@@ -82,6 +83,7 @@ def _limit_exceeded_detail(e: FreemiumLimitExceeded, identity: Optional[str]) ->
 
 @router.get("/access", response_model=AccessStatus)
 async def chat_access_endpoint(
+    http_request: Request,
     raw_token: Optional[str] = Depends(get_optional_raw_token),
     client_id: Optional[str] = None,
     freemium_service: FreemiumService = Depends(get_freemium_service_singleton),
@@ -95,12 +97,15 @@ async def chat_access_endpoint(
     indicator and the /chat workspace gate.
     """
     identity, token = _resolve_identity(raw_token, client_id)
-    status = await freemium_service.get_access_status(identity, token, client_id=client_id)
+    status = await freemium_service.get_access_status(
+        identity, token, client_id=client_id, client_ip=extract_client_ip(http_request)
+    )
     return status
 
 
 @router.post("/", response_model=ChatResponse)
 async def chat_endpoint(
+    http_request: Request,
     request: ChatRequest,
     raw_token: Optional[str] = Depends(get_optional_raw_token),
     _rate_limited: None = Depends(enforce_chat_rate_limit),
@@ -131,7 +136,9 @@ async def chat_endpoint(
     if identity:
         request.user_id = identity if not identity.startswith(GUEST_ID_PREFIX) else None
     try:
-        await freemium_service.check_and_consume(identity, token, client_id=request.client_id)
+        await freemium_service.check_and_consume(
+            identity, token, client_id=request.client_id, client_ip=extract_client_ip(http_request)
+        )
     except FreemiumLimitExceeded as e:
         raise HTTPException(
             status_code=429,
