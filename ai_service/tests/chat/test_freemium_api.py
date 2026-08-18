@@ -149,7 +149,8 @@ def test_guest_access_endpoint_tracks_usage(free_client, resolve_user):
     assert data["remaining"] == 2
 
 
-def test_distinct_guests_have_independent_limits(free_client, resolve_user):
+def test_distinct_guests_on_same_ip_share_the_allowance(free_client, resolve_user):
+    # Guest-a burns the shared per-IP allowance...
     for i in range(5):
         res = free_client.post(
             "/api/v1/chat/",
@@ -163,11 +164,46 @@ def test_distinct_guests_have_independent_limits(free_client, resolve_user):
         ).status_code
         == 429
     )
-    # guest-b is untouched.
+    # ...so guest-b on the same source IP must NOT get a fresh allowance. This
+    # is the client-id-rotation bypass: the quota is anchored to the server-side
+    # IP, not to a client-supplied id.
     assert (
         free_client.post(
             "/api/v1/chat/",
             json={"message": "fresh", "stream": False, "client_id": "guest-b"},
+        ).status_code
+        == 429
+    )
+
+
+def test_distinct_guests_on_different_ips_have_independent_limits(free_client, monkeypatch):
+    from app.api.routes import chat as chat_routes
+
+    def _extract_client_ip(request):
+        return request.headers.get("x-test-ip", "testclient")
+
+    monkeypatch.setattr(chat_routes, "extract_client_ip", _extract_client_ip)
+    for i in range(5):
+        res = free_client.post(
+            "/api/v1/chat/",
+            json={"message": f"a{i}", "stream": False, "client_id": "guest-a"},
+            headers={"X-Test-IP": "203.0.113.7"},
+        )
+        assert res.status_code == 200, res.text
+    assert (
+        free_client.post(
+            "/api/v1/chat/",
+            json={"message": "over", "stream": False, "client_id": "guest-a"},
+            headers={"X-Test-IP": "203.0.113.7"},
+        ).status_code
+        == 429
+    )
+    # A guest on a different source IP starts with its own allowance.
+    assert (
+        free_client.post(
+            "/api/v1/chat/",
+            json={"message": "fresh", "stream": False, "client_id": "guest-b"},
+            headers={"X-Test-IP": "198.51.100.9"},
         ).status_code
         == 200
     )
