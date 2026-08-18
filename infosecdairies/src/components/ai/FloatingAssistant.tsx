@@ -14,8 +14,6 @@ import {
   ArrowDown,
   Brain,
   X,
-  Minimize2,
-  Maximize2,
   ExternalLink,
   Crown,
   Sparkles,
@@ -93,10 +91,7 @@ const getSavedWinPos = () => {
 export const FloatingAssistant: React.FC = () => {
   const {
     isOpen,
-    isMinimized,
     close,
-    minimize,
-    expand,
     open,
     pageContext,
     access,
@@ -388,38 +383,6 @@ export const FloatingAssistant: React.FC = () => {
     );
   }
 
-  // Minimized: a compact pill bar anchored to the bottom-right of the viewport
-  // (above the launcher), using pure CSS so it never moves with page/content.
-  if (isMinimized) {
-    return (
-      <>
-        <div className="fixed right-4 bottom-[5.5rem] z-[80] flex w-[300px] max-w-[calc(100vw-2.5rem)] items-center gap-2 rounded-xl border border-border bg-background/95 p-2 shadow-2xl backdrop-blur">
-          <button
-            onClick={expand}
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-muted transition-colors"
-          >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-primary/30 bg-[#05272e]">
-              <img src={logo} alt="" className="h-full w-full object-cover" />
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-xs font-medium text-foreground">BlueTeamers AI</div>
-              {pageLabel && (
-                <div className="truncate text-[10px] text-muted-foreground">{pageLabel}</div>
-              )}
-            </div>
-          </button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={expand} aria-label="Expand">
-            <Maximize2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={close} aria-label="Close">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <UpgradeDialog variant="limit" />
-      </>
-    );
-  }
-
   // Floating-only dimensions, derived purely from the current viewport. They are
   // NEVER computed from the full workspace or from message/content size, so the
   // window can never inherit a fullscreen layout — only the conversation
@@ -474,9 +437,6 @@ export const FloatingAssistant: React.FC = () => {
               title="Open in full workspace (new tab)"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={minimize} title="Minimize">
-              <Minimize2 className="h-3.5 w-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={close} title="Close">
               <X className="h-3.5 w-3.5" />
@@ -534,7 +494,7 @@ export const FloatingAssistant: React.FC = () => {
                   </div>
                   <div
                     className={cn(
-                      "flex flex-col min-w-0",
+                      "flex flex-1 flex-col min-w-0",
                       msg.role === "user" ? "max-w-[85%] items-end" : "max-w-[92%] items-start",
                     )}
                   >

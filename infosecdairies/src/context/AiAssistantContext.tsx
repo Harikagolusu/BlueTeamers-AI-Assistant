@@ -23,15 +23,12 @@ const HIDDEN_PATHS = new Set(["/chat", "/auth", "/login"]);
 
 interface AiAssistantContextValue {
   isOpen: boolean;
-  isMinimized: boolean;
   upgradeOpen: boolean;
   pageContext: PageContextPayload;
   access: AiAccessStatus | null;
   chatState: ReturnType<typeof useChat>;
   open: () => void;
   close: () => void;
-  minimize: () => void;
-  expand: () => void;
   openUpgrade: () => void;
   closeUpgrade: () => void;
 }
@@ -45,7 +42,6 @@ export const AiAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const pageContext = usePageContext();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // The floating assistant is available on every page — including for visitors
@@ -58,7 +54,6 @@ export const AiAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     if (HIDDEN_PATHS.has(location.pathname)) {
       setIsOpen(false);
-      setIsMinimized(false);
     }
   }, [location.pathname]);
 
@@ -81,25 +76,20 @@ export const AiAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const value = useMemo<AiAssistantContextValue>(
     () => ({
       isOpen,
-      isMinimized,
       upgradeOpen,
       pageContext,
       access,
       chatState,
       open: () => {
-        setIsMinimized(false);
         setIsOpen(true);
       },
       close: () => {
         setIsOpen(false);
-        setIsMinimized(false);
       },
-      minimize: () => setIsMinimized(true),
-      expand: () => setIsMinimized(false),
       openUpgrade: () => setUpgradeOpen(true),
       closeUpgrade: () => setUpgradeOpen(false),
     }),
-    [isOpen, isMinimized, upgradeOpen, pageContext, access, chatState],
+    [isOpen, upgradeOpen, pageContext, access, chatState],
   );
 
   return (
