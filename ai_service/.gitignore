@@ -27,7 +27,7 @@ ENV/
 
 # AI / LangChain / FAISS / Vector DBs
 faiss_index/
-vector_store/
+/vector_store/
 chroma_db/
 qdrant_db/
 *.pt
