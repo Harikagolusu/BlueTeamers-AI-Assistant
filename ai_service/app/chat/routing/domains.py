@@ -5,11 +5,62 @@ a pure, deterministic function of the Intent Intelligence result plus a small
 domain lexicon used only to split ambiguous intent buckets (e.g. a "course" query
 may be a platform account question or a learning-coach request).
 """
+import re
 from enum import Enum
 from typing import Optional
 
 from app.chat.intent.models.analysis_result import IntentAnalysisResult
 from app.chat.intent.models.intent_types import IntentType
+
+# STEP 3A: Deterministic no-RAG for clearly conversational messages (zero LLM cost).
+# Exact-match set - the entire meaningful message must be one of these, not
+# containing additional knowledge content. Handles case, surrounding whitespace,
+# and trailing punctuation (!?.). Internal content like "thanks, what is FIM?"
+# does NOT match because the whole string is not in the set.
+_CONVERSATIONAL_NO_RAG_EXACT = {
+    "hi",
+    "hello",
+    "hey",
+    "good morning",
+    "good evening",
+    "thank you",
+    "thanks",
+    "okay",
+    "ok",
+    "bye",
+    "goodbye",
+    "how are you",
+    "how are you?",
+    "nice",
+    "great",
+    "got it",
+    "understood",
+    "yes",
+    "no",
+}
+# Normalized set without trailing ? for comparison (so "how are you?" and
+# "how are you" both match after stripping punctuation).
+_CONVERSATIONAL_NO_RAG_NORMALIZED = {
+    re.sub(r"[!?.]+$", "", s).strip() for s in _CONVERSATIONAL_NO_RAG_EXACT
+}
+
+
+def is_conversational_no_rag(query: str) -> bool:
+    """Return True if the query is a clearly non-knowledge conversational message.
+
+    Zero LLM cost: pure Python string normalization, no embedding, no API.
+    Only skips RAG when the *entire* meaningful message is an acknowledgement/
+    greeting with no additional knowledge request. If uncertain, returns False
+    so existing RAG flow is preserved.
+    """
+    if not query or not query.strip():
+        return False
+    q = query.strip().lower()
+    # Collapse internal whitespace and strip trailing punctuation (!?.)
+    q = re.sub(r"\s+", " ", q)
+    q = re.sub(r"[!?.]+$", "", q).strip()
+    # Also handle "how are you?" -> "how are you" after strip, so check normalized set
+    return q in _CONVERSATIONAL_NO_RAG_NORMALIZED
 
 
 class CyberDomain(str, Enum):
@@ -106,6 +157,14 @@ class DomainClassifier:
         self, query: str, intent_analysis: Optional[IntentAnalysisResult] = None
     ) -> tuple:
         """Return (CyberDomain, confidence, rationale)."""
+        # STEP 3A: Early deterministic no-RAG for clearly conversational messages.
+        # This is the final gate before agent selection: if the entire message is
+        # just a greeting/acknowledgement, force GENERAL so no RAG engine is
+        # selected. Zero LLM cost - pure string match. Knowledge queries like
+        # "thanks, what is FIM?" do NOT match and proceed normally.
+        if is_conversational_no_rag(query):
+            return CyberDomain.GENERAL, 0.99, ["conversational-no-rag"]
+
         query_lower = (query or "").lower()
         primary_intent = None
         if intent_analysis and getattr(intent_analysis, "primary_intent", None):

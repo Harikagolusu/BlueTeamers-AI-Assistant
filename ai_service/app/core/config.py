@@ -154,7 +154,7 @@ class Settings(BaseSettings):
 
     # Memory
     MEMORY_ENABLED: bool = True
-    MEMORY_WINDOW: int = 10
+    MEMORY_WINDOW: int = 6
     # Filesystem path for the SQLite conversation-memory store. Relative paths
     # resolve against the AI service working directory.
     MEMORY_DB_PATH: str = "data/memory.db"
@@ -187,6 +187,24 @@ class Settings(BaseSettings):
     FREEMIUM_GUEST_IP_KEYED: bool = True
     # Filesystem path for the SQLite freemium usage store.
     FREEMIUM_DB_PATH: str = "data/freemium.db"
+
+    # Per-user token usage tracking & limits
+    # We always COUNT how many LLM tokens each user identity (authenticated user
+    # id, or source IP for anonymous guests) consumes so the team can measure
+    # real usage before choosing hard limits. Enforcement is a separate toggle:
+    # turn TOKEN_QUOTA_ENFORCE on once you decide the daily/monthly caps.
+    TOKEN_QUOTA_ENABLED: bool = True
+    # When False we only record usage (audit-only) — nothing is blocked while
+    # colleagues test the bot and we discover realistic limits.
+    TOKEN_QUOTA_ENFORCE: bool = False
+    # Hard ceiling on LLM tokens a single user may consume per UTC day (used
+    # both as the day cap and as the threshold reported to callers).
+    TOKEN_DAILY_LIMIT: int = 100_000
+    # Hard ceiling on LLM tokens a single user may consume per calendar month.
+    TOKEN_MONTHLY_LIMIT: int = 2_000_000
+    # Filesystem path for the SQLite per-user token usage store.
+    TOKEN_QUOTA_DB_PATH: str = "data/token_quota.db"
+
 
     # Cost Optimization Layer (Sprint 6)
     # Recent Conversations & Favorites

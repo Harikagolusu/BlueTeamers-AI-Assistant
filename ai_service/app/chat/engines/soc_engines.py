@@ -92,7 +92,7 @@ WAZUH_LAB_PERSONA = _persona(
 class WazuhLabEngine(SocSpecialistEngine):
     agent_id = "wazuh_lab_assistant"
     persona = WAZUH_LAB_PERSONA
-    top_k = 6
+    top_k = 5
 
 
 PRACTICE_LAB_PERSONA = _persona(
@@ -114,7 +114,7 @@ PRACTICE_LAB_PERSONA = _persona(
 class PracticeLabEngine(SocSpecialistEngine):
     agent_id = "practice_lab_assistant"
     persona = PRACTICE_LAB_PERSONA
-    top_k = 6
+    top_k = 5
 
 
 INVESTIGATION_GUIDANCE_PERSONA = _persona(
@@ -136,7 +136,7 @@ INVESTIGATION_GUIDANCE_PERSONA = _persona(
 class InvestigationGuidanceEngine(SocSpecialistEngine):
     agent_id = "investigation_guidance_assistant"
     persona = INVESTIGATION_GUIDANCE_PERSONA
-    top_k = 6
+    top_k = 5
 
 
 WINDOWS_EVENT_LOG_PERSONA = _persona(
@@ -159,7 +159,7 @@ WINDOWS_EVENT_LOG_PERSONA = _persona(
 class WindowsEventLogEngine(SocSpecialistEngine):
     agent_id = "windows_event_log_assistant"
     persona = WINDOWS_EVENT_LOG_PERSONA
-    top_k = 6
+    top_k = 5
 
 
 LINUX_LOG_PERSONA = _persona(
@@ -181,7 +181,7 @@ LINUX_LOG_PERSONA = _persona(
 class LinuxLogEngine(SocSpecialistEngine):
     agent_id = "linux_log_assistant"
     persona = LINUX_LOG_PERSONA
-    top_k = 6
+    top_k = 5
 
 
 IOC_ANALYSIS_PERSONA = _persona(
@@ -203,7 +203,7 @@ IOC_ANALYSIS_PERSONA = _persona(
 class IocAnalysisEngine(SocSpecialistEngine):
     agent_id = "ioc_analysis_assistant"
     persona = IOC_ANALYSIS_PERSONA
-    top_k = 6
+    top_k = 5
 
 
 MITRE_GUIDANCE_PERSONA = _persona(
@@ -225,7 +225,7 @@ MITRE_GUIDANCE_PERSONA = _persona(
 class MitreGuidanceEngine(SocSpecialistEngine):
     agent_id = "mitre_guidance_assistant"
     persona = MITRE_GUIDANCE_PERSONA
-    top_k = 6
+    top_k = 5
 
 
 DETECTION_RULE_PERSONA = _persona(
@@ -247,4 +247,4 @@ DETECTION_RULE_PERSONA = _persona(
 class DetectionRuleEngine(SocSpecialistEngine):
     agent_id = "detection_rule_assistant"
     persona = DETECTION_RULE_PERSONA
-    top_k = 6
+    top_k = 5

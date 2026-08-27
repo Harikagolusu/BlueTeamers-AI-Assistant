@@ -48,6 +48,12 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator, model_valida
 # before per-attachment size caps apply.
 _MAX_ATTACHMENTS = 5
 
+# Per-attachment payload caps: images arrive as base64 (~1.37x binary size) and
+# files as extracted text. They bound the worst-case vision/prompt token cost of
+# a single chat turn without affecting normal text-only conversations.
+_MAX_IMAGE_B64_CHARS = 1_600_000    # ~1.2 MB binary per image
+_MAX_FILE_CONTENT_CHARS = 200_000   # ~200 KB of text per file
+
 
 def _bounded_list(v, default=None):
     if v is None:
@@ -55,6 +61,17 @@ def _bounded_list(v, default=None):
     if len(v) > _MAX_ATTACHMENTS:
         raise ValueError(f"A maximum of {_MAX_ATTACHMENTS} attachments are allowed.")
     return v
+
+
+def _validate_attachment_sizes(images=None, files=None):
+    """Raise when any single attachment exceeds its per-item payload cap."""
+    for i, img in enumerate(images or [], start=1):
+        if not isinstance(img, str) or len(img) > _MAX_IMAGE_B64_CHARS:
+            raise ValueError(f"Image {i} exceeds the maximum allowed size.")
+    for i, file in enumerate(files or [], start=1):
+        content = (file or {}).get("content") or ""
+        if len(content) > _MAX_FILE_CONTENT_CHARS:
+            raise ValueError(f"File {i} exceeds the maximum allowed size.")
 
 class ChatRequest(BaseModel):
     """Standard inbound payload for Chat API."""
@@ -75,6 +92,12 @@ class ChatRequest(BaseModel):
     @classmethod
     def cap_attachments(cls, v):
         return _bounded_list(v)
+
+    @model_validator(mode="after")
+    @classmethod
+    def validate_attachment_sizes(cls, m: "ChatRequest") -> "ChatRequest":
+        _validate_attachment_sizes(images=m.images, files=m.files)
+        return m
 
     @model_validator(mode="before")
     @classmethod

@@ -6,6 +6,7 @@ This implements the domain-level prompt builder interface used by the execution 
 which operates at the RAG service layer and uses PromptRequest/PromptResponse objects.
 """
 
+import re
 from typing import Dict, Any, Optional, Tuple
 from app.prompt_builder.interfaces import IPromptBuilder
 from app.persona.modes import detect_mode, instruction_for
@@ -56,6 +57,58 @@ _GREETING_SYSTEM_PROMPT = (
 )
 
 _GREETING_QUERY_WORDS = ("hello", "hi", "hey", "good morning", "good afternoon", "good evening", "yo")
+
+
+# Assessment-integrity detection: learners sometimes paste quiz/exam questions
+# straight from course assessments. Those must be TUTORED (hints, reasoning),
+# never answered outright. Option-labelled lines ("A) ...", "B. ...") are the
+# strongest signal; common phrasings are a secondary one.
+_MCQ_OPTION_RE = re.compile(r"^[ \t]*([A-F])[.):][ \t]+\S", re.MULTILINE)
+# Bare "A Some answer text" style (letter + space), used by pasted course quizzes.
+# Requires >= 3 distinct lettered lines so ordinary prose is never flagged.
+_MCQ_BARE_OPTION_RE = re.compile(r"^[ \t]*([A-F])[ \t]+\S", re.MULTILINE)
+_ASSESSMENT_PHRASES = (
+    "which of the following",
+    "choose the correct",
+    "select the correct",
+    "pick the correct",
+)
+
+
+def _assessment_option_letters(query: str) -> set:
+    """Distinct A-F option labels found at line starts."""
+    q = query or ""
+    letters = {m.group(1).upper() for m in _MCQ_OPTION_RE.finditer(q)}
+    if len(letters) < 2:
+        bare = {m.group(1).upper() for m in _MCQ_BARE_OPTION_RE.finditer(q)}
+        if len(bare) >= 3:
+            letters |= bare
+    return letters
+
+
+def _is_assessment_question(query: str) -> bool:
+    if len(_assessment_option_letters(query)) >= 2:
+        return True
+    lowered = (query or "").lower()
+    return any(phrase in lowered for phrase in _ASSESSMENT_PHRASES)
+
+
+ASSESSMENT_TUTOR_BLOCK = (
+    "[Assessment Integrity]\n"
+    "The user pasted what looks like a quiz, exam, or assessment question.\n"
+    "You are a MENTOR, not an answer key - follow these rules strictly:\n"
+    "- NEVER state which option is correct, never confirm or rule out any\n"
+    "  specific lettered choice (A/B/C/D...), and do NOT restate, paraphrase, or\n"
+    "  describe the correct option's content - even if it appears in [Context].\n"
+    "- Name only the general TOPIC area the question covers (e.g. 'SOC core\n"
+    "  functions'), then ask the learner to reason through the options and commit\n"
+    "  to their own answer before any further option-by-option discussion.\n"
+    "- You may drop at most ONE small hint (a concept to recall), without ever\n"
+    "  narrowing it down to a single letter or option.\n"
+    "- Only after the learner commits may you walk through every option and\n"
+    "  explain why each is right or wrong."
+)
+
 
 # Concise-response + clean-output rules. Appended after the [Persona] block so
 # it refines (but never replaces) the mentor persona: answer first, keep it
@@ -172,6 +225,10 @@ class SimplePromptBuilder(IPromptBuilder):
 
         # Response modes (summary / ELI5) adjust only the current response.
         # ELI5 takes precedence over summary when both are requested.
+        # Assessment integrity: pasted quiz questions are tutored, never answered.
+        if _is_assessment_question(query):
+            system_parts.append(ASSESSMENT_TUTOR_BLOCK)
+
         mode = detect_mode(query)
         mode_block = instruction_for(mode)
         if mode_block:

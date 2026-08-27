@@ -58,6 +58,49 @@ def _resolve_user(token: str, client_id: Optional[str] = None):
         return f"{GUEST_ID_PREFIX}{client_id}", None
     return None, None
 
+
+def _get_display_name_for_scope(scope: Optional[str], email_hint: Optional[str] = None) -> tuple:
+    """Return (display_name, email) for a quota scope.
+
+    For ``user:<id>`` scopes we look up the Django ``accounts_user`` table to
+    fetch the canonical ``full_name`` + ``email`` so logs show e.g.
+    ``Harika Demo User <harika@example.com>`` instead of just ``user:1``.
+    Guests return ``(None, None)`` — they are already keyed by their
+    ``guest:<client_id>`` and have no directory entry. Failures are silent and
+    fall back to the JWT email hint if available.
+    """
+    if not scope or scope.startswith(GUEST_ID_PREFIX) or scope.startswith("ip:"):
+        return None, email_hint
+    # Authenticated: scope is user:<id> or raw user_id
+    raw_id = scope.split(":", 1)[-1] if ":" in scope else scope
+    try:
+        import pathlib, sqlite3
+
+        # Django DB lives at infosec-backend; try both relative locations.
+        candidates = [
+            pathlib.Path("infosecdairies/infosec-backend/backend/db.sqlite3"),
+            pathlib.Path("../infosecdairies/infosec-backend/backend/db.sqlite3"),
+            pathlib.Path("/home/harika/BlueTeamers-AI-Assistant/infosecdairies/infosec-backend/backend/db.sqlite3"),
+        ]
+        db_path = next((p for p in candidates if p.exists()), None)
+        if not db_path:
+            return email_hint, email_hint
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT full_name, email FROM accounts_user WHERE id = ?", (raw_id,)
+        ).fetchone()
+        conn.close()
+        if row:
+            return row["full_name"] or email_hint, row["email"] or email_hint
+    except Exception:
+        pass
+    return email_hint, email_hint
+
+# Hard ceiling on streamed answer size. Normal answers land far below this;
+# it only stops runaway/looping generations from burning unbounded tokens.
+_MAX_STREAM_CHARS = 24_000
+
 class ChatService(IChatService):
     """
     Application Layer boundary for Chat processing.
@@ -120,7 +163,13 @@ class ChatService(IChatService):
                 "trace_id": str(context.trace_id),
                 **language_meta,
             })
-            return self._stream_response(generator, result.message, stream_metadata, pending_turn=pending_turn)
+            return self._stream_response(
+                generator,
+                result.message,
+                stream_metadata,
+                pending_turn=pending_turn,
+                quota_scope=self._quota_scope(session_user),
+            )
         else:
             final_metadata = {
                 "latency": result.latency_ms,
@@ -132,6 +181,10 @@ class ChatService(IChatService):
             # Remove generator if present
             final_metadata.pop("generator", None)
             
+            # Token accounting: persist the LLM tokens consumed by this request
+            # (daily + monthly windows). Best-effort; never affects the reply.
+            await self._record_token_usage(self._quota_scope(session_user))
+
             return ChatResponse(
                 conversation_id=request.conversation_id or str(uuid.uuid4()),
                 message=clean_response(result.message),
@@ -139,11 +192,52 @@ class ChatService(IChatService):
                 used_tools=[t.get("tool") for t in getattr(result, "tool_outputs", [])]
             )
 
-    async def _stream_response(self, generator, fallback_message: str, metadata: dict = None, pending_turn: dict = None) -> AsyncGenerator[str, None]:
+    @staticmethod
+    def _quota_scope(session_user: Optional[str]) -> Optional[str]:
+        """Map the identified session user to the token-quota scope key.
+
+        Authenticated users are billed as ``user:<id>``; guests carry their
+        persistent browser ``client_id`` as ``guest:<client_id>`` (per-device
+        granularity — better than the shared office IP for measuring usage).
+        Fully anonymous callers have no scope and are not billed.
+        """
+        if not session_user:
+            return None
+        if str(session_user).startswith("guest:"):
+            return session_user
+        return f"user:{session_user}"
+
+    async def _record_token_usage(self, scope: Optional[str]) -> None:
+        """Persist the LLM tokens this request consumed (daily + monthly).
+
+        Best-effort: accounting must never break the user's answer, so any
+        failure is logged and swallowed. For authenticated scopes we also
+        persist the human-readable ``full_name`` + ``email`` from the Django
+        ``accounts_user`` table so the usage log shows names, not just
+        ``user:1``.
+        """
+        if not scope:
+            return
+        try:
+            from app.runtime.context_manager import RuntimeContextManager
+            from app.runtime.services.token_usage_recorder import record_tokens
+
+            total = RuntimeContextManager.get().token_usage.total_tokens
+            if total > 0:
+                display_name, email = _get_display_name_for_scope(scope)
+                await record_tokens(scope, total, display_name=display_name, email=email)
+        except Exception as exc:
+            logger.warning("Failed to record token usage for %s: %s", scope, exc)
+
+    async def _stream_response(self, generator, fallback_message: str, metadata: dict = None, pending_turn: dict = None, quota_scope: str = None) -> AsyncGenerator[str, None]:
         import json
         parts = []
+        emitted = 0
         if generator:
             async for chunk in generator:
+                if emitted >= _MAX_STREAM_CHARS:
+                    break
+                emitted += len(chunk)
                 parts.append(chunk)
                 payload = {"token": chunk}
                 yield f"data: {json.dumps(payload)}\n\n"
@@ -152,6 +246,9 @@ class ChatService(IChatService):
             # Preserve newlines so markdown structure (headings, bullets) is
             # not flattened into a single paragraph.
             for chunk in _tokenize_preserving_newlines(clean_response(fallback_message)):
+                if emitted >= _MAX_STREAM_CHARS:
+                    break
+                emitted += len(chunk)
                 parts.append(chunk)
                 payload = {"token": chunk}
                 yield f"data: {json.dumps(payload)}\n\n"
@@ -165,6 +262,10 @@ class ChatService(IChatService):
                 await self._persist_pending_turn(pending_turn, "".join(parts))
             except Exception as exc:
                 logger.warning("Failed to persist streamed turn: %s", exc)
+
+        # Token accounting for streamed replies: the real LLM token usage is
+        # only known once the stream has been fully consumed, so record it here.
+        await self._record_token_usage(quota_scope)
 
         # Yield metadata at the end of the stream
         if metadata:

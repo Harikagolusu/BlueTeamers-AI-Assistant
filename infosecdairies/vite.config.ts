@@ -6,8 +6,9 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 5173,
+    allowedHosts: true,
     proxy: {
       "/api/chat": {
         target: "http://127.0.0.1:8001",
@@ -24,6 +25,13 @@ export default defineConfig(({ mode }) => ({
         target: "http://127.0.0.1:8001",
         changeOrigin: true,
         secure: false,
+        xfwd: true,
+      },
+      "/api/token-usage": {
+        target: "http://127.0.0.1:8001",
+        changeOrigin: true,
+        secure: false,
+        xfwd: true,
       },
       "/api": {
         target: "http://127.0.0.1:8000",

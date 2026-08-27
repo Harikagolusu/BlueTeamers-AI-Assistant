@@ -91,6 +91,25 @@ class DeepSeekProvider(BaseLLMProvider):
             total_tokens, cost, latency,
         )
 
+        # Record the real token usage into the per-user accounting ledger so the
+        # runtime token quota actually sees it (and colleagues testing the bot
+        # produce measurable usage). Runs for both the streaming and the
+        # non-streaming path because this method is their shared choke point.
+        try:
+            from app.runtime.models.context import TokenUsage
+            from app.runtime.services.accounting_service import TokenAccountant
+            TokenAccountant().add_usage(
+                TokenUsage(
+                    input_tokens=prompt_tokens,
+                    output_tokens=completion_tokens,
+                    cached_tokens=cached,
+                    tool_tokens=0,
+                )
+            )
+        except Exception:
+            # Accounting must never break generation; failures are just logged.
+            logger.warning("Failed to record token usage into runtime ledger", exc_info=True)
+
     async def generate(self, request: LLMRequest) -> LLMResponse:
         start_time = time.time()
         req_id = request_id_var.get()

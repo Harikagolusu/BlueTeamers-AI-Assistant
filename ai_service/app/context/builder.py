@@ -1,3 +1,5 @@
+import hashlib
+import re
 import time
 import logging
 from typing import List
@@ -19,12 +21,78 @@ class ContextProcessingLogic:
     """
     @staticmethod
     def deduplicate(chunks: List[RetrievedChunk]) -> List[RetrievedChunk]:
-        seen = set()
-        unique = []
+        """Content-based deduplication for exact duplicate content only.
+
+        - Uses existing metadata["content_hash"] when available (SHA1 of original
+          text stored at ingestion, reliable per app/knowledge/pipeline.py:77).
+        - Fallback: SHA1 of whitespace-normalized content (collapse spaces/newlines
+          via regex, preserve case/punctuation).
+        - For each exact duplicate group, keep the highest-scoring occurrence.
+        - Preserve original relevance-ranked order (retrieval order, already sorted
+          by score descending from VectorStore/RetrievalService).
+        - Do NOT remove partially overlapping, adjacent, or similar chunks.
+        """
+        if not chunks:
+            return []
+
+        def _content_hash(c: RetrievedChunk) -> str:
+            # Preferred: existing content_hash from ingestion (exact, reliable)
+            meta_hash = (c.metadata or {}).get("content_hash")
+            if isinstance(meta_hash, str) and meta_hash:
+                return f"hash:{meta_hash}"
+            # Fallback: SHA1 of whitespace-normalized text (no lowercasing)
+            normalized = re.sub(r"\s+", " ", (c.text or "").strip())
+            return hashlib.sha1(normalized.encode("utf-8")).hexdigest()
+
+        # Group by hash, track highest score per hash and its representative
+        best_by_hash: dict[str, RetrievedChunk] = {}
         for c in chunks:
-            if c.chunk_id not in seen:
-                seen.add(c.chunk_id)
+            h = _content_hash(c)
+            existing = best_by_hash.get(h)
+            if existing is None or c.score > existing.score:
+                best_by_hash[h] = c
+
+        # Preserve original relevance-ranked order: iterate in input order,
+        # keep only the chosen representative for each hash (first occurrence
+        # of the best). This retains order without global resort.
+        seen_hash = set()
+        unique: List[RetrievedChunk] = []
+        for c in chunks:
+            h = _content_hash(c)
+            best = best_by_hash[h]
+            # Only keep the exact chosen instance (identity by chunk_id+score)
+            # and only once per hash.
+            if h not in seen_hash and c.chunk_id == best.chunk_id and c.score == best.score:
+                # This is the highest-scoring occurrence; keep it
+                seen_hash.add(h)
                 unique.append(c)
+            elif h not in seen_hash and best_by_hash[h].chunk_id == c.chunk_id:
+                # Fallback when scores tie and we kept the first encountered best
+                seen_hash.add(h)
+                unique.append(best)
+            elif h in seen_hash:
+                # Duplicate already kept, skip
+                continue
+            else:
+                # Not the best for this hash, skip (duplicate)
+                # But ensure we eventually keep the best even if it appears later:
+                # If current chunk is not the best, we skip it now; the best will
+                # be kept when we encounter it in order.
+                continue
+
+        # Edge: if best was later in order, the earlier duplicate was skipped
+        # and best not yet added; ensure all bests are present in original order
+        # of their first appearance as best. Reconcile by second pass if needed.
+        if len(unique) != len(best_by_hash):
+            # Rebuild in original order of bests
+            unique = []
+            seen_hash.clear()
+            for c in chunks:
+                h = _content_hash(c)
+                if h not in seen_hash and c.chunk_id == best_by_hash[h].chunk_id:
+                    seen_hash.add(h)
+                    unique.append(best_by_hash[h])
+
         return unique
 
     @staticmethod
@@ -112,10 +180,14 @@ class ContextProcessingLogic:
     def build_structured_context(chunks: List[ContextChunk]) -> str:
         """
         Builds the raw string context formatted with citations.
+
+        NOTE: Source title is NOT repeated here; SimplePromptBuilder already
+        adds "[Document i] (source: Course / Lesson)" header for each doc.
+        Keeping it here would duplicate the same lesson_title twice in the
+        final LLM prompt (STEP 4 Option C).
         """
         sections = []
-        for i, c in enumerate(chunks, 1):
-            source = c.metadata.get("lesson_title", c.metadata.get("source", f"Document {i}"))
-            sections.append(f"--- SOURCE: {source} ---\n{c.text}")
+        for c in chunks:
+            sections.append(f"{c.text}")
             
         return "\n\n".join(sections)

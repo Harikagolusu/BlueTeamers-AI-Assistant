@@ -6,6 +6,15 @@ from app.chat.intent.models.intent_types import IntentType
 from app.chat.intent.models.analysis_result import DetectedIntent
 from app.chat.intent.catalog_vocabulary import catalog_terms_in_query
 
+# STEP 3A: Deterministic no-RAG for clearly conversational messages (imported
+# from routing to keep single source of truth, zero LLM cost).
+try:
+    from app.chat.routing.domains import is_conversational_no_rag
+except ImportError:
+    # Fallback if routing not yet loaded (circular import safety)
+    def is_conversational_no_rag(query: str) -> bool:  # type: ignore
+        return False
+
 
 def _has_word(query_lower: str, word: str) -> bool:
     """Word-boundary aware presence check (avoids 'exam' matching 'example')."""
@@ -610,7 +619,15 @@ class RuleIntentClassifier(IIntentClassifier):
         # A bare security entity ("T1059", "CVE-2024-1234") is a knowledge query.
         entity_only = has_entity and platform_intent is None and not trigger_matched and not pure_domain
 
-        if explicit_knowledge or pure_domain or entity_only:
+        # STEP 3A: Skip RAG for clearly conversational messages (deterministic, zero LLM cost).
+        # The check is exact-match on the whole query (e.g. "hi", "thank you"),
+        # so "thanks, what is FIM?" or "okay explain Wazuh" do NOT match and still
+        # get RAG as normal. This saves ~250-400 RAG tokens for pure greetings.
+        if is_conversational_no_rag(query):
+            # Do not add RAG_CHAT for pure conversational messages; they will
+            # fall through to GREETING/GENERAL_CHAT below.
+            pass
+        elif explicit_knowledge or pure_domain or entity_only:
             rag_features = list(dict.fromkeys(
                 trigger_matched + domain_matched + content_ref_matched + catalog_matched +
                 [e.value for e in entities.all() if e.type in ("CVE", "MITRE_TID")]
