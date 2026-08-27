@@ -55,11 +55,21 @@ def get_guardrails_service(
     
     input_pipeline = InputPipeline()
     output_pipeline = OutputPipeline()
+
     
-    # Add groups to pipelines
+    
+    # Add groups to the appropriate pipelines. The Security group
+    # (injection detection) is input-direction only: applying it to model
+    # output caused false positives whenever the security-coach legitimately
+    # quoted an injection phrase while discussing it as a topic (audit A-02).
+    # Validation (length) runs on both sides; SensitiveDataLeakPolicy (compliance)
+    # is output-direction only, per its design.
     for group in registry.get_all_groups():
         input_pipeline.add_group(group)
-        output_pipeline.add_group(group)
+        # Injection patterns are an input-guardrail concern; exclude them from
+        # output evaluation so teaching/discussion content is not blocked.
+        if group.name != "Security":
+            output_pipeline.add_group(group)
         
     return GuardrailsService(
         config=config,
