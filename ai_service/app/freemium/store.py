@@ -7,6 +7,7 @@ event loop is never blocked (matches the adaptive-learning store pattern).
 import asyncio
 import datetime
 import sqlite3
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -30,6 +31,11 @@ class FreemiumStore:
     def __init__(self, db_path: str = "data/freemium.db"):
         self.db_path = db_path
         self._conn: Optional[sqlite3.Connection] = None
+        # Clock-tamper anchors: UTC wall clock + monotonic clock at process
+        # start. monotonic() cannot be changed by editing the OS date, so the
+        # pair lets us detect wall-clock jumps that outpace real elapsed time.
+        self._boot_utc: datetime.datetime = _utc_now()
+        self._boot_mono: float = time.monotonic()
 
     def _connect(self) -> sqlite3.Connection:
         if self._conn is None:
@@ -200,5 +206,33 @@ class FreemiumStore:
         policy = (settings.FREEMIUM_RESET_POLICY or "daily").lower()
         now = _utc_now()
         if policy == "daily":
-            return _day_start(now).isoformat()
+            # Guard 1 (forward jump): if the wall clock moved ahead faster than
+            # real time could have elapsed (monotonic clock is immune to OS
+            # date edits), clamp it so changing the system date to "tomorrow"
+            # cannot mint a fresh daily window mid-session.
+            try:
+                real_elapsed = max(0.0, time.monotonic() - self._boot_mono)
+                max_allowed = self._boot_utc + datetime.timedelta(
+                    seconds=real_elapsed
+                ) + datetime.timedelta(hours=1)
+                if now > max_allowed:
+                    now = max_allowed
+            except Exception:
+                pass
+
+            new_reset = _day_start(now).isoformat()
+            # Guard 2 (backward jump): never move the window backwards relative
+            # to windows already observed and persisted. If the clock rolls to
+            # an earlier day, keep serving the most recent window instead of
+            # reviving an older one.
+            try:
+                row = self._connect().execute(
+                    "SELECT MAX(reset_at) FROM daily_usage"
+                ).fetchone()
+                last = row[0] if row else None
+                if last and last != "epoch" and new_reset < last:
+                    return last
+            except Exception:
+                pass
+            return new_reset
         return "epoch"
