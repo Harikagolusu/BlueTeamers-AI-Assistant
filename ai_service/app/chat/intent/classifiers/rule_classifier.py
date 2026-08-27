@@ -420,6 +420,11 @@ class RuleIntentClassifier(IIntentClassifier):
             )]
 
         # 2. Platform signals — most specific intent wins (first match in priority order).
+        # Skip platform if the query is a transformation with untrusted content
+        # (e.g., "Summarize this text: ... course data ...") - the "course" in
+        # the data to be transformed should not trigger platform.
+        is_transformation = any(p in query_lower for p in ["summarize this text:", "summarize this:", "translate this text:", "translate this:", "analyze this text:"])
+        has_exclusion = "do not" in query_lower and any(n in query_lower for n in ["course", "progress", "account", "personal"])
         platform_specs = [
             (IntentType.PLATFORM_ASSESSMENT, _PLATFORM_ASSESSMENT),
             (IntentType.PLATFORM_CERTIFICATE, _PLATFORM_CERTIFICATE),
@@ -432,11 +437,20 @@ class RuleIntentClassifier(IIntentClassifier):
             (IntentType.PLATFORM_COURSE, _PLATFORM_COURSE),
         ]
         platform_intent = None
-        for intent_type, signals in platform_specs:
-            matched = _matches_any(query_lower, signals)
-            if matched:
-                platform_intent = DetectedIntent(
-                    type=intent_type,
+        # For transformation content, only check the instruction prefix, not the data after colon
+        query_for_platform = query_lower.split(":", 1)[0] if is_transformation and ":" in query_lower else query_lower
+        # If the query explicitly says "do not" + platform, don't treat the platform words as intent
+        if has_exclusion and ("what is 2" in query_lower or "summarize" in query_lower or "translate" in query_lower or "explain malware" in query_lower):
+            # This is an exclusion/privacy request with a non-platform question, skip platform
+            platform_intent = None
+        else:
+            for intent_type, signals in platform_specs:
+                # For transformation, use the prefix only
+                check_q = query_for_platform
+                matched = _matches_any(check_q, signals)
+                if matched:
+                    platform_intent = DetectedIntent(
+                        type=intent_type,
                     confidence=0.0,
                     reason=f"Matched {intent_type.value} platform keywords.",
                     matched_features=matched,

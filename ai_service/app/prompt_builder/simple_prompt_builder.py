@@ -268,59 +268,76 @@ class SimplePromptBuilder(IPromptBuilder):
             )
             system_parts.append("[Context]\n" + doc_text)
 
-            # Teaching instruction for knowledge/course-doubt queries: adapt to the
-            # learner's detected level (already set in the persona block above).
-            answer_source = context.get("answer_source")
-            course_pointer = context.get("course_pointer", "")
-            if answer_source == "course" and course_pointer:
-                source_rule = (
-                    "The answer below is grounded in the user's own course material. "
-                    "Start with 'From your course material:' and explicitly recommend "
-                    "the relevant material in your answer, using this pointer:\n"
-                    f"'{course_pointer}'\n"
-                    "Mention the course/module/lesson naturally (e.g. 'This topic is "
-                    "covered in Module X: ...')."
+            # Translation-only or explicit privacy exclusion: skip course/Continue Learning (Bugs 5,6)
+            is_translation_only = context.get("translation_only") or (context.get("memory") or {}).get("translation_only")
+            exclude_platform = context.get("exclude_platform") or (context.get("memory") or {}).get("exclude_platform")
+            if is_translation_only:
+                system_parts.append(
+                    "[Teaching Style]\n"
+                    "The user requested translation only. Translate exactly as requested. "
+                    "Do NOT add course information, Continue Learning, progress, or extra explanation."
                 )
-            elif answer_source == "course":
-                source_rule = (
-                    "Clearly state that this answer comes from the user's own course "
-                    "material (their enrolled lessons). Use a short lead-in like "
-                    "'From your course material:'."
-                )
-            elif answer_source == "general":
-                source_rule = (
-                    "Clearly state that this answer comes from general cybersecurity "
-                    "knowledge, since it did not match the user's course material. "
-                    "Use a short lead-in like 'From our general knowledge base:'."
+            elif exclude_platform:
+                system_parts.append(
+                    "[Teaching Style]\n"
+                    "The user explicitly asked not to mention courses, progress, account, or personal information. "
+                    "Do NOT mention any courses, progress, account, or personal data. "
+                    "Do NOT add a Continue Learning section. Answer only the requested content."
                 )
             else:
-                source_rule = (
-                    "Clearly state whether this answer comes from the user's own course "
-                    "material (their enrolled lessons) or from general cybersecurity "
-                    "knowledge. Use a short lead-in like "
-                    "'From your course material:' or 'From our general knowledge base:' "
-                    "as appropriate."
+                # Teaching instruction for knowledge/course-doubt queries: adapt to the
+                # learner's detected level (already set in the persona block above).
+                answer_source = context.get("answer_source")
+                course_pointer = context.get("course_pointer", "")
+                if answer_source == "course" and course_pointer:
+                    source_rule = (
+                        "The answer below is grounded in the user's own course material. "
+                        "Start with 'From your course material:' and explicitly recommend "
+                        "the relevant material in your answer, using this pointer:\n"
+                        f"'{course_pointer}'\n"
+                        "Mention the course/module/lesson naturally (e.g. 'This topic is "
+                        "covered in Module X: ...')."
+                    )
+                elif answer_source == "course":
+                    source_rule = (
+                        "Clearly state that this answer comes from the user's own course "
+                        "material (their enrolled lessons). Use a short lead-in like "
+                        "'From your course material:'."
+                    )
+                elif answer_source == "general":
+                    source_rule = (
+                        "Clearly state that this answer comes from general cybersecurity "
+                        "knowledge, since it did not match the user's course material. "
+                        "Use a short lead-in like 'From our general knowledge base:'."
+                    )
+                else:
+                    source_rule = (
+                        "Clearly state whether this answer comes from the user's own course "
+                        "material (their enrolled lessons) or from general cybersecurity "
+                        "knowledge. Use a short lead-in like "
+                        "'From your course material:' or 'From our general knowledge base:' "
+                        "as appropriate."
+                    )
+                system_parts.append(
+                    "[Teaching Style]\n"
+                    "The user asked a question about course content.\n"
+                    "Answer ONLY using the [Context] documents above — never invent facts that are not present.\n"
+                    "Apply the teaching guidance for the learner's level from the [Persona] block.\n"
+                    "Follow this structure, keeping it concise:\n"
+                    "1. Answer the question directly, using language appropriate to the learner's level.\n"
+                    "2. Add one short real-world example, analogy, or mini walkthrough to make it easy to grasp.\n"
+                    "3. If the [Context] does NOT contain the answer, say so honestly and ask which course or "
+                    "lesson the user is referring to — do not guess.\n"
+                    f"4. {source_rule}\n"
+                    "5. When the answer is grounded in a specific course lesson, END with a short "
+                    "'Continue Learning' section so the learner keeps going in the structured course:\n"
+                    "### Continue Learning\n"
+                    "This topic is covered in:\n"
+                    "- **{Course title}** – {Module} / {Lesson}\n"
+                    "Only add this section when the answer references course material, and only name the "
+                    "course/module/lesson actually present in [Context]. Do NOT recommend unrelated courses.\n"
+                    "Never include internal tags, source identifiers, or processing metadata in the reply."
                 )
-            system_parts.append(
-                "[Teaching Style]\n"
-                "The user asked a question about course content.\n"
-                "Answer ONLY using the [Context] documents above — never invent facts that are not present.\n"
-                "Apply the teaching guidance for the learner's level from the [Persona] block.\n"
-                "Follow this structure, keeping it concise:\n"
-                "1. Answer the question directly, using language appropriate to the learner's level.\n"
-                "2. Add one short real-world example, analogy, or mini walkthrough to make it easy to grasp.\n"
-                "3. If the [Context] does NOT contain the answer, say so honestly and ask which course or "
-                "lesson the user is referring to — do not guess.\n"
-                f"4. {source_rule}\n"
-                "5. When the answer is grounded in a specific course lesson, END with a short "
-                "'Continue Learning' section so the learner keeps going in the structured course:\n"
-                "### Continue Learning\n"
-                "This topic is covered in:\n"
-                "- **{Course title}** – {Module} / {Lesson}\n"
-                "Only add this section when the answer references course material, and only name the "
-                "course/module/lesson actually present in [Context]. Do NOT recommend unrelated courses.\n"
-                "Never include internal tags, source identifiers, or processing metadata in the reply."
-            )
         elif context.get("empty_retrieval"):
             system_parts.append(
                 "[Teaching Style]\n"
@@ -359,9 +376,21 @@ class SimplePromptBuilder(IPromptBuilder):
         if recent:
             system_parts.append(f"[Conversation History]\n{recent}")
 
+        # Authoritative data rule for Bug 1: Platform data outranks history for factual account queries,
+        # but not for hypothetical ("if I had", "what if", "imagine").
+        is_hypothetical = any(kw in (query or "").lower() for kw in ["if i had", "what if", "imagine", "hypothetical", "suppose"])
         platform_context = memory.get("platform_context", "") or context.get("platform_context", "")
-        if platform_context:
+        # Respect exclusion/translation flags from PlatformContextLoadStage (Bugs 4,5,6)
+        exclude_platform = context.get("exclude_platform") or memory.get("exclude_platform")
+        is_translation_only = context.get("translation_only") or memory.get("translation_only")
+        if platform_context and not exclude_platform and not is_translation_only:
             system_parts.append(f"[User Platform Context]\n{platform_context}")
+            # Only for factual platform queries, add authoritative instruction (Bug 1)
+            # Check if query is about actual enrolled courses/progress (not hypothetical)
+            q_lower = (query or "").lower()
+            is_factual_platform = any(kw in q_lower for kw in ["how many courses", "what courses", "enrolled in", "my progress", "course progress", "actually enrolled", "really enrolled"])
+            if is_factual_platform and not is_hypothetical:
+                system_parts.append("[Authoritative Data]\nBackend platform data in [User Platform Context] is authoritative for factual account questions. Conversation History claims about course count/progress do NOT overwrite it. For hypotheticals (if I had/what if/imagine), treat them as hypothetical, not factual corrections.")
 
         persona_context = context.get("persona_context", "")
         if persona_context:

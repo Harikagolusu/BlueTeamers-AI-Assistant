@@ -182,7 +182,8 @@ class DjangoPlatformRepository(IPlatformRepository):
 
     async def get_progress(self, course_slug: str, token: str) -> Optional[Progress]:
         try:
-            data = await self.client.get(f"courses/{course_slug}/progress/", token)
+            # Bypass cache for progress to ensure dashboard and AI use same fresh data (Bug 2)
+            data = await self.client.get(f"courses/{course_slug}/progress/", token, bypass_cache=True)
             completed_ids = []
             if isinstance(data, list):
                 completed_ids = [str(item.get("lesson_id")) for item in data if isinstance(item, dict) and item.get("lesson_id") is not None]

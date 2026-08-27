@@ -48,7 +48,7 @@ class PlatformApiClient:
         async with self._lock:
             self._cache[key] = (time.time(), data)
 
-    async def _request(self, method: str, path: str, token: str, retries: int = 3, **kwargs) -> Any:
+    async def _request(self, method: str, path: str, token: str, retries: int = 3, bypass_cache: bool = False, **kwargs) -> Any:
         url = path
         headers = kwargs.pop("headers", {})
         
@@ -60,9 +60,9 @@ class PlatformApiClient:
         if req_id:
             headers["X-Request-ID"] = req_id
         
-        # Cache logic for GET requests
+        # Cache logic for GET requests (bypass for progress to ensure fresh dashboard data)
         cache_key = f"{method}:{path}:{token}"
-        if method == "GET":
+        if method == "GET" and not bypass_cache:
             cached_data = await self._get_cached(cache_key)
             if cached_data is not None:
                 logger.debug(f"Cache hit for {path}")
@@ -116,8 +116,8 @@ class PlatformApiClient:
                 
         raise DjangoUnavailableException("Max retries exceeded for Django API.")
 
-    async def get(self, path: str, token: str, **kwargs) -> Any:
-        return await self._request("GET", path, token, **kwargs)
+    async def get(self, path: str, token: str, bypass_cache: bool = False, **kwargs) -> Any:
+        return await self._request("GET", path, token, bypass_cache=bypass_cache, **kwargs)
 
     async def post(self, path: str, token: str, **kwargs) -> Any:
         return await self._request("POST", path, token, **kwargs)
