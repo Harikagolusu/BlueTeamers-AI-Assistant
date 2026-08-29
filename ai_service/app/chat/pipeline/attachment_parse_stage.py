@@ -20,6 +20,13 @@ from typing import Any, Dict, Optional
 
 from app.chat.interfaces.i_execution_stage import IExecutionStage
 from app.chat.context.execution_context import ExecutionContext
+from app.chat.pipeline.guardrails_stage import (
+    BLOCKED_MESSAGE,
+    _guardrail_context,
+)
+from app.guardrails.domain.services.guardrails_service import GuardrailsService
+from app.guardrails.exceptions.guardrail_exceptions import PolicyViolationError
+from app.models.chat.chat_models import ExecutionResult, ExecutionStatus
 
 logger = logging.getLogger("app.chat.pipeline.attachment_parse_stage")
 
@@ -62,6 +69,19 @@ def _get_ocr():
 
 
 class AttachmentParseStage(IExecutionStage):
+    """Parses user attachments and injects their content into the model query.
+
+    Security (audit A-01): attachment-derived text bypasses
+    ``InputGuardrailsStage`` (which runs on the raw query only, earlier in the
+    pipeline). After injection, the combined query is therefore re-validated
+    through the same input-guardrails pipeline here, so injected attachment
+    content (e.g. template smuggling or instruction-override text) cannot
+    reach the model unchecked. Benign attachments are unaffected.
+    """
+
+    def __init__(self, guardrails_service: Optional[GuardrailsService] = None):
+        self._guardrails = guardrails_service
+
     @property
     def name(self) -> str:
         return "AttachmentParse"
@@ -147,6 +167,42 @@ class AttachmentParseStage(IExecutionStage):
 
         if sections:
             query = "\n\n".join(sections) + "\n\nUser request:\n" + query
+
+            # Audit A-01: re-run the input-guardrails pipeline over the combined
+            # query (user request + attachment-derived text). Attachment content
+            # never passed through InputGuardrailsStage, so without this check
+            # injected instructions/template tokens inside an upload reached the
+            # model unchecked. A violation short-circuits the same graceful way
+            # as InputGuardrailsStage (blocked ExecutionResult).
+            if self._guardrails is not None:
+                try:
+                    await self._guardrails.validate_input(
+                        _guardrail_context(context, query, stage="attachment_input")
+                    )
+                except PolicyViolationError as e:
+                    logger.warning(
+                        "Input blocked by guardrails (attachment content): %s", e
+                    )
+                    result = ExecutionResult(
+                        status=ExecutionStatus.BLOCKED,
+                        engine_name="guardrails",
+                        message=BLOCKED_MESSAGE,
+                        metadata={
+                            "guardrail_blocked": True,
+                            "guardrail_reason": str(e),
+                            "guardrail_stage": "attachment_input",
+                        },
+                    )
+                    return context.model_copy(
+                        update={
+                            "metadata": {
+                                **context.metadata,
+                                "execution_result": result,
+                                "guardrail_blocked": True,
+                                "guardrail_reason": str(e),
+                            }
+                        }
+                    )
 
         new_metadata = {
             **context.metadata,

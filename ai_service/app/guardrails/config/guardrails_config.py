@@ -25,6 +25,7 @@ class GuardrailsConfig(BaseSettings):
         r"ignore\s+(all|any|the)\s+(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?|directions?)",
         r"disregard\s+(all\s+|your\s+|the\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?)",
         r"forget\s+(all\s+|your\s+|the\s+)?(previous|prior|above)\s+(instructions?|prompts?|rules?)",
+        r"forget\s+everything",
         r"override\s+(your|the|all)\s+(system\s+)?(instructions?|prompts?|rules?|guardrails?|filters?)",
         r"bypass filters",
         # System-prompt extraction attempts (intent-specific; a bare "system
@@ -39,6 +40,16 @@ class GuardrailsConfig(BaseSettings):
         # Hosted-model template/delimiter smuggling
         r"<\|im_start\|>",
         r"<\|endoftext\|>",
+        # Additional paraphrase groups (audit A-02) — still intent-specific:
+        # each targets an *attempt to override/extract this assistant's
+        # behaviour*, not educational discussion of the topic.
+        r"ignore\s+(your|the|its)\s+(training|programming|conditioning)",
+        r"(stop|quit)\s+(following|obeying|listening\s+to)\s+(your|the|its)?\s*(instructions?|rules?|prompts?|guardrails?)",
+        r"(erase|wipe)\s+(your|the|its)?\s*(memory|training|instructions?|rules?)",
+        r"(new|real|actual|updated)\s+(instructions?|rules?)\s*:",
+        r"(reveal|show|print|repeat|display|expose|leak|dump|spit\s+out)\s+(me\s+)?(your|the|its)\s+(rules?|guardrails?|guidelines?|configuration)",
+        r"do\s+anything\s+now",
+        r"you\s+are\s+now\s+(dan|unfiltered|uncensored|unrestricted|evil)",
     ]
     
     @field_validator('max_prompt_length')

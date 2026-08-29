@@ -1,6 +1,10 @@
 from typing import Optional
+import logging
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_logger = logging.getLogger("app.core.config")
 
 
 class Settings(BaseSettings):
@@ -185,6 +189,9 @@ class Settings(BaseSettings):
     # free messages per window. Disable only if all clients legitimately share
     # one IP (e.g. the AI service is unreachable from the public internet).
     FREEMIUM_GUEST_IP_KEYED: bool = True
+    # Whether to trust X-Forwarded-For for freemium IP keying. False by default
+    # so direct connections (no proxy) use the peer IP, preventing XFF spoofing.
+    FREEMIUM_TRUST_XFF: bool = False
     # Filesystem path for the SQLite freemium usage store.
     FREEMIUM_DB_PATH: str = "data/freemium.db"
 
@@ -294,6 +301,19 @@ class Settings(BaseSettings):
                     'string, e.g. CORS_ORIGINS=\'["https://www.infosecdairies.io",'
                     '"https://infosecdairies.io"]\'. Wildcard or empty is not '
                     "allowed with credentials."
+                )
+            # Security (audit B-01): Django stamps iss/aud on every token, but
+            # the AI service only verifies those claims when JWT_ISSUER /
+            # JWT_AUDIENCE are configured. Make a missing configuration loud
+            # instead of silently accepting any issuer/audience in production.
+            if not self.JWT_ISSUER or not self.JWT_AUDIENCE:
+                _logger.warning(
+                    "SECURITY: JWT_ISSUER/JWT_AUDIENCE are not fully configured; "
+                    "issuer/audience claims on incoming tokens will NOT be "
+                    "verified (iss=%s, aud=%s). Set both to enable strict "
+                    "validation in production.",
+                    self.JWT_ISSUER or "<unset>",
+                    self.JWT_AUDIENCE or "<unset>",
                 )
 
         return self

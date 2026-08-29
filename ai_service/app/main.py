@@ -22,6 +22,12 @@ app = FastAPI(
     description="Enterprise API integration layer for BlueTeamers AI Assistant.",
     version=settings.APP_VERSION,
     lifespan=lifespan,
+    # Security (audit B-04): interactive API documentation and the OpenAPI
+    # schema are disabled outside development so production never exposes
+    # route/parameter details to unauthenticated callers.
+    docs_url="/docs" if settings.DEVELOPMENT_MODE else None,
+    redoc_url="/redoc" if settings.DEVELOPMENT_MODE else None,
+    openapi_url="/openapi.json" if settings.DEVELOPMENT_MODE else None,
     contact={
         "name": "InfoSec Dairies AI Team",
         "email": "ai-support@infosecdairies.io",

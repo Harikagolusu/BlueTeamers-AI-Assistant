@@ -12,6 +12,8 @@ import logging
 
 from app.security.auth import resolve_user_identity
 from app.chat.sanitize import clean_response
+from app.guardrails.domain.models.context import GuardrailContext
+from app.guardrails.exceptions.guardrail_exceptions import PolicyViolationError
 
 
 def _tokenize_preserving_newlines(text: str) -> List[str]:
@@ -100,6 +102,9 @@ def _get_display_name_for_scope(scope: Optional[str], email_hint: Optional[str] 
 # Hard ceiling on streamed answer size. Normal answers land far below this;
 # it only stops runaway/looping generations from burning unbounded tokens.
 _MAX_STREAM_CHARS = 24_000
+# Audit A-07: flush safety valve for streaming segments without newlines —
+# keeps very long single-line answers rendering progressively.
+_STREAM_FLUSH_CHARS = 512
 
 class ChatService(IChatService):
     """
@@ -110,10 +115,15 @@ class ChatService(IChatService):
         orchestrator: IChatOrchestrator,
         memory_manager: IMemoryManager = None,
         conversation_service: ConversationService = None,
+        guardrails_service=None,
     ):
         self._orchestrator = orchestrator
         self._memory_manager = memory_manager
         self._conversations = conversation_service
+        # Optional guardrails service used to safety-check streamed output
+        # (audit A-03/A-07): OutputGuardrailsStage only sees the streaming
+        # placeholder, so the actual streamed chunks are checked here.
+        self._guardrails = guardrails_service
 
     async def process_request(self, request: ChatRequest) -> Union[ChatResponse, AsyncGenerator[str, None]]:
         # 1. Validation & Setup
@@ -156,7 +166,23 @@ class ChatService(IChatService):
             generator = result.metadata.get("generator")
             pending_turn = result.metadata.get("_pending_turn")
             # Create a safe copy of metadata without the generator for the final event
-            stream_metadata = {k: v for k, v in result.metadata.items() if k not in ("generator", "_pending_turn")}
+            # Use allowlist for client-safe fields only (F-05: no content_hash/chunk_id)
+            _safe_keys = {"agent", "engine", "intent", "domain", "answer_source", "course_sources", "suggested_courses", "llm_used", "recommendation_used", "repositories"}
+            stream_metadata = {k: v for k, v in result.metadata.items() if k in _safe_keys}
+            # Sanitize sources to only safe metadata (no content_hash, chunk_id, text)
+            if "sources" in result.metadata:
+                safe_sources = []
+                for doc in result.metadata["sources"]:
+                    meta = doc.get("metadata", {})
+                    safe_sources.append({
+                        "metadata": {
+                            "course_slug": meta.get("course_slug"),
+                            "course_title": meta.get("course_title"),
+                            "lesson_title": meta.get("lesson_title"),
+                            "lesson_id": meta.get("lesson_id"),
+                        }
+                    })
+                stream_metadata["sources"] = safe_sources
             stream_metadata.update({
                 "latency": result.latency_ms,
                 "citations": getattr(result, "citations", []),
@@ -233,14 +259,83 @@ class ChatService(IChatService):
         import json
         parts = []
         emitted = 0
+        # Audit A-07: streamed chunks previously reached the client raw —
+        # neither clean_response() nor output guardrails ran on them, so
+        # internal artifacts ([Document N], SOURCE lines, debug tags) could
+        # leak. Naively sanitizing every token corrupts matches that span
+        # chunks, so we buffer per *line* (all artifact patterns are
+        # line-anchored) and sanitize each complete line before emitting.
+        # The trailing partial line is held back until more text or the end
+        # of the stream, keeping SSE behaviour and wording intact.
+        buffer = ""
+
+        async def _emit_sanitized(text: str) -> str:
+            """Sanitize one complete segment and run output guardrails.
+
+            Returns the SSE frame, or '' when the segment was removed by
+            sanitization. Guardrail blocks replace the segment with a short
+            notice instead of failing the whole stream.
+            """
+            cleaned = clean_response(text)
+            if not cleaned:
+                return ""
+            if self._guardrails is not None:
+                try:
+                    await self._guardrails.validate_output(
+                        GuardrailContext(
+                            text=cleaned,
+                            trace_id="stream",
+                            request_id="stream",
+                            environment="production",
+                            metadata={"stage": "stream_output"},
+                        )
+                    )
+                except PolicyViolationError as e:
+                    logger.warning("Streamed output blocked by guardrails: %s", e)
+                    return (
+                        'data: {"token": "\\n\\n[Part of this response was '
+                        'withheld by our content safety policy.]"}\\n\\n'
+                    )
+                except Exception as exc:
+                    # Safety checking must never break the answer stream.
+                    logger.warning("Stream output guardrail check failed: %s", exc)
+            return f'data: {json.dumps({"token": cleaned})}\n\n'
+
+        def _deliver(text: str, frame: str):
+            nonlocal emitted
+            if not frame:
+                return
+            parts.append(text)
+            emitted += len(text)
+            return frame
+
         if generator:
             async for chunk in generator:
                 if emitted >= _MAX_STREAM_CHARS:
                     break
-                emitted += len(chunk)
-                parts.append(chunk)
-                payload = {"token": chunk}
-                yield f"data: {json.dumps(payload)}\n\n"
+                buffer += chunk
+                # Flush every complete line (kept in order, with its newline).
+                while "\n" in buffer and emitted < _MAX_STREAM_CHARS:
+                    line, buffer = buffer.split("\n", 1)
+                    frame = await _emit_sanitized(line + "\n")
+                    frame = _deliver(line + "\n", frame)
+                    if frame:
+                        yield frame
+                # Safety valve: very long single-line streams must still
+                # render progressively; flush the buffer once it grows past
+                # the cap (artifact patterns are line-anchored, so a partial
+                # line cannot hide a ^-anchored match).
+                if len(buffer) >= _STREAM_FLUSH_CHARS and emitted < _MAX_STREAM_CHARS:
+                    frame = await _emit_sanitized(buffer)
+                    frame = _deliver(buffer, frame)
+                    if frame:
+                        yield frame
+                    buffer = ""
+            if buffer and emitted < _MAX_STREAM_CHARS:
+                frame = await _emit_sanitized(buffer)
+                frame = _deliver(buffer, frame)
+                if frame:
+                    yield frame
         else:
             # Fallback mock streaming if engine didn't provide a generator.
             # Preserve newlines so markdown structure (headings, bullets) is

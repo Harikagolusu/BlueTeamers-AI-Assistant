@@ -302,8 +302,10 @@ def get_chat_service() -> IChatService:
         MemoryLoadStage(memory_manager),
         # Uploaded files/images are parsed here so their content is injected
         # into the query before routing/execution — the LLM can then analyze
-        # the actual data instead of seeing only the user's text.
-        AttachmentParseStage(),
+        # the actual data instead of seeing only the user's text. The stage
+        # re-validates the combined query through input guardrails so
+        # attachment-derived text cannot bypass input safety (audit A-01).
+        AttachmentParseStage(guardrails_service),
         # Platform + persona (Sprint 5 wiring): load the user's live platform
         # context, then inject the BlueTeamers persona + learner level so every
         # engine inherits the mentor persona in its system prompt.
@@ -329,4 +331,7 @@ def get_chat_service() -> IChatService:
         orchestrator,
         memory_manager=memory_manager,
         conversation_service=get_conversation_service(),
+        # Streamed chunks are safety-checked here because OutputGuardrailsStage
+        # only sees the streaming placeholder (audit A-03/A-07).
+        guardrails_service=guardrails_service,
     )

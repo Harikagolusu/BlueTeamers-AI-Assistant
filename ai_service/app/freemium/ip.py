@@ -20,12 +20,18 @@ from starlette.requests import Request
 def extract_client_ip(request: Request) -> Optional[str]:
     """Return the caller's source IP for freemium keying, or None when unknown.
 
-    Prefers the direct transport peer, falling back to the right-most
-    ``X-Forwarded-For`` entry only when that peer is a trusted intermediate.
+    When FREEMIUM_TRUST_XFF is False (default), the direct transport peer is
+    authoritative and X-Forwarded-For is ignored, preventing spoofing when the
+    service is directly exposed without a trusted proxy.
     """
+    from app.core.config import settings
+
     if not request.client or not request.client.host:
         return None
     peer = request.client.host
+    # Only trust XFF when explicitly enabled
+    if not getattr(settings, "FREEMIUM_TRUST_XFF", False):
+        return peer
     xff = request.headers.get("x-forwarded-for")
     parts = [p.strip().strip("\"'").strip() for p in xff.split(",") if p.strip()] if isinstance(xff, str) else []
     if parts and _is_trusted_proxy(peer):
