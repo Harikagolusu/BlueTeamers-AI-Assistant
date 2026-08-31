@@ -9,7 +9,9 @@ from app.guardrails.groups.security_group import SecurityGroup
 from app.guardrails.groups.compliance_group import ComplianceGroup
 from app.guardrails.policies.input.length_validation_policy import LengthValidationPolicy
 from app.guardrails.policies.input.injection_detection_policy import InjectionDetectionPolicy
+from app.guardrails.policies.input.course_manipulation_policy import CourseManipulationPolicy
 from app.guardrails.policies.compliance.sensitive_data_policy import SensitiveDataLeakPolicy
+from app.guardrails.policies.output.course_integrity_policy import CourseIntegrityPolicy
 from app.guardrails.infrastructure.adapters.regex_engine_adapter import RegexEngineAdapter
 from app.observability.dependencies import get_observability_service
 from app.observability.service import ObservabilityService
@@ -33,6 +35,7 @@ def get_policy_registry() -> PolicyRegistry:
     security_group = SecurityGroup()
     regex_engine = RegexEngineAdapter(patterns=config.blocked_injection_patterns)
     security_group.add_policy(InjectionDetectionPolicy(regex_engine=regex_engine))
+    security_group.add_policy(CourseManipulationPolicy())
     registry.register_group(security_group)
     
     # Compliance Group
@@ -40,6 +43,7 @@ def get_policy_registry() -> PolicyRegistry:
     # Stops credential-shaped strings (API keys, tokens, private keys) from
     # leaving the service inside AI answers. Output-direction only by design.
     compliance_group.add_policy(SensitiveDataLeakPolicy())
+    compliance_group.add_policy(CourseIntegrityPolicy())
     registry.register_group(compliance_group)
     
     # Startup validation

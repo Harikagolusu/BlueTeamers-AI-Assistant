@@ -15,6 +15,17 @@ const LANGUAGE_STORAGE_KEY = 'bt_chat_language_v1';
 // in-flight conversation from the floating window.
 const SYNC_CHANNEL = 'bt_chat_sync_v1';
 
+function safeRandomUUID(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    // ignore and fall back
+  }
+  return `r-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 interface SyncState {
   messages: ChatMessage[];
   conversationId: string | null;
@@ -70,7 +81,7 @@ export function useChat(onNewConversation?: (id: string) => void) {
   // floating window and the full workspace continue the same LIVE conversation
   // even when the workspace is opened in a new tab (sessionStorage is per-tab,
   // so a new tab would otherwise start empty and never receive updates).
-  const instanceIdRef = useRef<string>(`bt-chat-${crypto.randomUUID()}`);
+  const instanceIdRef = useRef<string>(`bt-chat-${safeRandomUUID()}`);
   const channelRef = useRef<BroadcastChannel | null>(null);
   // Hash of the last snapshot this instance announced (or adopted) so we never
   // echo identical state back and forth between tabs.
@@ -532,7 +543,7 @@ export function useChat(onNewConversation?: (id: string) => void) {
       });
     }
 
-    const convId = overrideConversationId || conversationIdRef.current || crypto.randomUUID();
+    const convId = overrideConversationId || conversationIdRef.current || safeRandomUUID();
     if (!conversationIdRef.current && !overrideConversationId) {
       setConversationId(convId);
       onNewConversation?.(convId);
@@ -599,7 +610,7 @@ export function useChat(onNewConversation?: (id: string) => void) {
   // Send a lab hint without creating any chat messages: the response is
   // folded straight into the active LabCard.
   const sendLabHint = useCallback(async () => {
-    const convId = conversationIdRef.current || crypto.randomUUID();
+    const convId = conversationIdRef.current || safeRandomUUID();
     if (!conversationIdRef.current) {
       setConversationId(convId);
       onNewConversation?.(convId);
@@ -666,7 +677,7 @@ export function useChat(onNewConversation?: (id: string) => void) {
   }, []);
 
   const startNewConversation = useCallback(() => {
-    const newId = crypto.randomUUID();
+    const newId = safeRandomUUID();
     setConversationId(newId);
     setMessages([]);
     setError(null);
