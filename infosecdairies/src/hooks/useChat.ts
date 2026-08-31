@@ -677,10 +677,10 @@ export function useChat(onNewConversation?: (id: string) => void) {
               } else if (prev.includes("\n- ") && toAppend.trim().length > 0 && !toAppend.includes("|")) {
                 // Previous was bullet list, next is paragraph/heading after list (e.g., last bullet "Investigation Pivot" + "**Real-world example:**")
                 // Without blank line, paragraph is swallowed into last bullet (as seen in image: "tools.Real-world example:")
-                // Detect list -> non-list transition: prev had bullets, next is not bullet/table
+                // Only for block-level starts, not inline words like "Quiz " or "quiz-1: " which are part of same bullet
                 const nextIsListContinuation = /^(- |\* |• |\d+\. )/.test(tokenTrimStart) || tokenTrimStart.startsWith("|");
-                if (!nextIsListContinuation) {
-                  // Next is paragraph like "**Real-world example:**", "From a SOC...", "### Continue", "This topic..."
+                const isBlockStart = /^(?:\*\*|###|> |From a SOC|This topic|SUGGESTED|Real-world)/.test(tokenTrimStart);
+                if (!nextIsListContinuation && isBlockStart) {
                   if (!prev.endsWith("\n")) {
                     toAppend = "\n\n" + toAppend.trimStart();
                   } else if (!prev.endsWith("\n\n")) {
