@@ -85,35 +85,52 @@ interface ChatMarkdownProps {
   isStreaming?: boolean;
 }
 
-function normalizeTableMarkdown(s: string): string {
-  if (!s || !s.includes("|")) return s;
-  // Defense for both streaming and persisted messages: fix collapsed tables
-  // e.g. "| Aspect | Details ||---|---|| What |" -> proper multiline table
-  // and "alerts || Indexer" (Wazuh data-row -> data-row) -> "alerts |\n| Indexer"
+function normalizeMarkdown(s: string): string {
+  if (!s) return s;
   let out = s;
-  // Generic row boundary for Wazuh-style tables: "alerts || Indexer" or "alerts | | Indexer"
-  // Only when table separator "---" is present, so non-table "||" (code) is untouched
-  if (out.includes("---")) {
-    out = out.replace(/\|\s*\|\s*/g, "|\n|");
-  } else if (out.includes("||")) {
-    out = out.replace(/\|\s*\|\s*(?=-)/g, "|\n|");
+  // Table fixes (only when "|" present)
+  if (out.includes("|")) {
+    if (out.includes("---")) {
+      out = out.replace(/\|\s*\|\s*/g, "|\n|");
+    } else if (out.includes("||")) {
+      out = out.replace(/\|\s*\|\s*(?=-)/g, "|\n|");
+    }
+    out = out.replace(/([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)/g, (m, p1, p2) =>
+      p2.includes("---") ? p1 + "\n" + p2.trimStart() : m
+    );
+    out = out.replace(/(\|[-:\s|]+\|)\s+(\|)/g, (m, a, b) => (a.includes("---") ? a + "\n" + b : m));
+    if (out.includes("||")) {
+      out = out.replace(/\|\|\s*/g, "|\n|");
+    }
+    out = out.replace(/([^\n])\n(\| [^\n]*\|[^\n]*\n\|[-:\s|]+\|)/g, "$1\n\n$2");
   }
-  out = out.replace(/([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)/g, (m, p1, p2) =>
-    p2.includes("---") ? p1 + "\n" + p2.trimStart() : m
-  );
-  out = out.replace(/(\|[-:\s|]+\|)\s+(\|)/g, (m, a, b) => (a.includes("---") ? a + "\n" + b : m));
-  // Generic collapsed rows where "||" remains (header -> separator, separator -> row)
-  if (out.includes("||")) {
-    out = out.replace(/\|\|\s*/g, "|\n|");
+  // Bullet list fixes: "here are 5 key points:- Collection" or "entry point.- Parsing" -> need newline before "- "
+  if (out.includes("- ")) {
+    // "analyst:- Collection" / "analyst: - Collection" -> "analyst:\n\n- Collection"
+    out = out.replace(/([^\n]):\s*-\s+(?=[A-Z*•])/g, "$1:\n\n- ");
+    // "entry point.- Parsing" / "entry point. - Parsing" -> "entry point.\n- Parsing"
+    out = out.replace(/([^\n])\.\s*-\s+(?=[A-Z*•])/g, "$1.\n- ");
+    // Generic bullet-to-bullet without newline: "Ingestion – ...- Parsing" where previous bullet ends and next starts "- "
+    // Detect "point.- Parsing" already, also "point. - Parsing" and "point - Parsing" with en-dash bullet context
+    // Fallback: any " - " that is bullet start after previous bullet text, ensure newline
+    // Only when out looks like a list (has at least one bullet at line start or " - **")
+    if (out.includes("\n- ") || out.match(/(^|\n)\s*-\s+\*\*/)) {
+      // Fix remaining collapsed " - **" or " - Collection" inside same line: "entry point.- Parsing" -> already, also "– Pulls...- Parsing"
+      out = out.replace(/([^\n\u2013])\s+-\s+(?=\*\*|[A-Z])/g, (m, p1) => {
+        // Avoid breaking " - " inside tables or code; only when out has list markers
+        if (out.includes("\n- ") && !m.includes("|")) return `${p1}\n- `;
+        return m;
+      });
+    }
+    // Ensure first bullet after intro paragraph has blank line (defense for streaming inter-token)
+    out = out.replace(/([^\n:])\n(- \*\*[^\n]*)/g, "$1\n\n$2");
   }
   out = out.replace(/\n{3,}/g, "\n\n");
-  // Ensure table is not inline after paragraph (final safety for streaming)
-  out = out.replace(/([^\n])\n(\| [^\n]*\|[^\n]*\n\|[-:\s|]+\|)/g, "$1\n\n$2");
   return out;
 }
 
 export function ChatMarkdown({ children, isStreaming = false }: ChatMarkdownProps) {
-  const content = normalizeTableMarkdown(children || "");
+  const content = normalizeMarkdown(children || "");
   const markdown = (
     <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
       {content}

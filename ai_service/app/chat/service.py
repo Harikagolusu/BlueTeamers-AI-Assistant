@@ -270,36 +270,41 @@ class ChatService(IChatService):
         buffer = ""
 
         def _normalize_table_newlines(text: str) -> str:
-            """Fix collapsed markdown tables inside a streamed chunk.
+            """Fix collapsed markdown tables and bullet lists inside a streamed chunk.
 
             LLMs occasionally stream "| Details ||---|---|" or
             "|---|---| | **What** |" without the required newline between
-            rows. The row-boundary then lives *inside* a single 512-char
-            safety-valve flush, so the frontend inter-token fix never fires.
-            Normalizing here ensures the SSE token itself is already valid
-            markdown (and that persisted history is correct).
+            rows, or "here are 5 key points:- Collection" without newline
+            before bullets. The boundary then lives *inside* a single
+            512-char safety-valve flush, so the frontend inter-token fix
+            never fires. Normalizing here ensures the SSE token itself is
+            already valid markdown (and that persisted history is correct).
             """
-            if not text or "|" not in text:
+            if not text:
                 return text
             import re as _re
             out = text
-            # Generic row boundary for Wazuh-style tables: "alerts || Indexer" or "alerts | | Indexer"
-            # Only when table separator is present, otherwise "||" outside tables is left alone
-            if "---" in out and "||" in out:
-                out = _re.sub(r"\|\s*\|\s*", "|\n|", out)
-            elif "---" in out and "| |" in out:
-                out = _re.sub(r"\|\s*\|\s*", "|\n|", out)
-            elif "||" in out and "---" in out:
-                out = out.replace("||", "|\n|")
-            else:
-                # Fallback for separator-only collapse: "| Details ||---|---|"
-                if "||" in out and "---" in out:
+            if "|" in out:
+                # Generic row boundary for Wazuh-style tables: "alerts || Indexer" or "alerts | | Indexer"
+                if "---" in out and "||" in out:
+                    out = _re.sub(r"\|\s*\|\s*", "|\n|", out)
+                elif "---" in out and "| |" in out:
+                    out = _re.sub(r"\|\s*\|\s*", "|\n|", out)
+                elif "||" in out and "---" in out:
                     out = out.replace("||", "|\n|")
-                out = _re.sub(r"\|\s*\|\s*(?=-)", "|\n|", out)
-            # 1) Missing newline before separator row
-            out = _re.sub(r"([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)", lambda m: m.group(1) + "\n" + m.group(2).strip() if "---" in m.group(2) else m.group(0), out)
-            # 2) Separator glued to next data row: "|---|---| | What" -> "|---|---| \n| What"
-            out = _re.sub(r"(\|[-:\s|]+\|)\s+(\|)", lambda m: m.group(1) + "\n" + m.group(2) if "---" in m.group(1) else m.group(0), out)
+                else:
+                    if "||" in out and "---" in out:
+                        out = out.replace("||", "|\n|")
+                    out = _re.sub(r"\|\s*\|\s*(?=-)", "|\n|", out)
+                # 1) Missing newline before separator row
+                out = _re.sub(r"([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)", lambda m: m.group(1) + "\n" + m.group(2).strip() if "---" in m.group(2) else m.group(0), out)
+                # 2) Separator glued to next data row: "|---|---| | What" -> "|---|---| \n| What"
+                out = _re.sub(r"(\|[-:\s|]+\|)\s+(\|)", lambda m: m.group(1) + "\n" + m.group(2) if "---" in m.group(1) else m.group(0), out)
+            if "- " in out:
+                # Bullet list: "analyst:- Collection" -> "analyst:\n\n- Collection"
+                out = _re.sub(r"([^\n]):\s*-\s+(?=[A-Z*•])", r"\1:\n\n- ", out)
+                # "entry point.- Parsing" -> "entry point.\n- Parsing"
+                out = _re.sub(r"([^\n])\.\s*-\s+(?=[A-Z*•])", r"\1.\n- ", out)
             return out
 
         async def _emit_sanitized(text: str) -> str:

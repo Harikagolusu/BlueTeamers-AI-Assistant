@@ -590,21 +590,40 @@ export function useChat(onNewConversation?: (id: string) => void) {
             // 2) Inter-token: "| Details |" + "|---|---|" streamed as separate SSE tokens without \n
             // We normalize both the incoming token and the boundary.
             const normalizeTableChunk = (s: string): string => {
-              if (!s.includes("|")) return s;
               let out = s;
-              // Generic row boundary: "alerts || Indexer" or "alerts | | Indexer" -> "alerts |\n| Indexer"
-              // Only when table separator "---" is present, to avoid breaking non-table "||" uses
-              // This fixes Wazuh image where only first 2 rows rendered and rest collapsed as "|| Indexer"
-              if (out.includes("---") || out.includes("||") || out.includes("| |")) {
-                out = out.replace(/\|\s*\|\s*/g, "|\n|");
+              // Table fixes (only when "|" present)
+              if (out.includes("|")) {
+                // Generic row boundary: "alerts || Indexer" or "alerts | | Indexer" -> "alerts |\n| Indexer"
+                if (out.includes("---") || out.includes("||") || out.includes("| |")) {
+                  out = out.replace(/\|\s*\|\s*/g, "|\n|");
+                }
+                // Missing newline before separator row when previous text has no \n: "Details | |---|---|"
+                out = out.replace(/([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)/g, (m, p1, p2) => {
+                  if (p2.includes("---")) return p1 + "\n" + p2.trimStart();
+                  return m;
+                });
+                // Separator row directly glued to next data row: "|---|---| | **What** |" -> "|---|---| \n| **What** |"
+                out = out.replace(/(\|[-:\s|]+\|)\s+(\|)/g, (m, a, b) => (a.includes("---") ? a + "\n" + b : m));
               }
-              // Missing newline before separator row when previous text has no \n: "Details | |---|---|"
-              out = out.replace(/([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)/g, (m, p1, p2) => {
-                if (p2.includes("---")) return p1 + "\n" + p2.trimStart();
-                return m;
-              });
-              // Separator row directly glued to next data row: "|---|---| | **What** |" -> "|---|---| \n| **What** |"
-              out = out.replace(/(\|[-:\s|]+\|)\s+(\|)/g, (m, a, b) => (a.includes("---") ? a + "\n" + b : m));
+              // Bullet list fixes: "here are 5 key points:- Collection" or "entry point.- Parsing" -> need newline before "- "
+              // Handles both intra-token collapsed bullets and inter-token boundaries
+              if (out.includes("- ")) {
+                // " : - " or ".- " collapsed inside single token: "analyst:- Collection" / "point.- Parsing"
+                out = out.replace(/([^\n])\s*:\s*-\s+(?=[A-Z*])/g, "$1:\n- ");
+                out = out.replace(/([^\n])\s*\.\s*-\s+(?=[A-Z*])/g, "$1.\n- ");
+                // Generic bullet-to-bullet without newline: "point.- Parsing" already handled, also "Ingestion – ...- Parsing"
+                // More general: any " - " that is bullet start after previous bullet's text, ensure newline
+                // Only when out looks like a list (contains at least two "- " bullets)
+                const bulletCount = (out.match(/(^|\n)\s*-\s+/g) || []).length + (out.match(/[^\n]\s*-\s+(?=[A-Z*])/g) || []).length;
+                if (bulletCount >= 1 || out.trimStart().startsWith("- ")) {
+                  // Fix "entry point.- Parsing" that may have been missed due to en-dash "–"
+                  out = out.replace(/([^\n\u2013])\s*-\s+(?=\*\*|[A-Z])/g, (m, p1) => {
+                    // Avoid breaking " - " inside "single pane of glass: search" (not bullet)
+                    // Only when preceding char is . : or | or already bullet context
+                    return m;
+                  });
+                }
+              }
               return out;
             };
             let toAppend = normalizeTableChunk(token);
@@ -642,6 +661,19 @@ export function useChat(onNewConversation?: (id: string) => void) {
                 if (!prev.endsWith("\n")) {
                   toAppend = "\n" + toAppend.trimStart();
                 }
+              } else if (/^(- |\* |• |\d+\. )/.test(tokenTrimStart)) {
+                // Bullet list: "- Collection..." after "here are 5 key points:" or after previous bullet
+                // Markdown lists require newline before "- " (and blank line after paragraph)
+                // Handles "here are 5 key points:- Collection" -> "here are 5 key points:\n\n- Collection"
+                // and "entry point.- Parsing" already fixed intra-token, but also inter-token "- " + "- "
+                if (!prev.endsWith("\n")) {
+                  // First bullet after paragraph needs blank line
+                  if (prevTrimEnd.endsWith(":") || prevTrimEnd.endsWith(".")) {
+                    toAppend = "\n\n" + tokenTrimStart;
+                  } else {
+                    toAppend = "\n" + tokenTrimStart;
+                  }
+                }
               } else if (prevEndsPipe && toAppend.trim().length > 0) {
                 // Table row -> paragraph (e.g. "| ... |" + "**Real-world example:**")
                 // Needs blank line to close table, otherwise paragraph is swallowed into last cell
@@ -656,6 +688,9 @@ export function useChat(onNewConversation?: (id: string) => void) {
                   }
                 }
                 // else: cell continuation like " Aggregates... |" -> append directly to same row
+              } else if (prev && !prev.endsWith("\n") && /^(- |\* |• |\d+\. )/.test(toAppend.trimStart()) && toAppend.trimStart().startsWith("-")) {
+                // Fallback bullet handling for tokens that were normalized but still bullet-like
+                toAppend = "\n" + toAppend.trimStart();
               }
             }
             // Final safety: if concatenation still left a collapsed table, fix the whole message once
