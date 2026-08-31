@@ -269,6 +269,39 @@ class ChatService(IChatService):
         # of the stream, keeping SSE behaviour and wording intact.
         buffer = ""
 
+        def _normalize_table_newlines(text: str) -> str:
+            """Fix collapsed markdown tables inside a streamed chunk.
+
+            LLMs occasionally stream "| Details ||---|---|" or
+            "|---|---| | **What** |" without the required newline between
+            rows. The row-boundary then lives *inside* a single 512-char
+            safety-valve flush, so the frontend inter-token fix never fires.
+            Normalizing here ensures the SSE token itself is already valid
+            markdown (and that persisted history is correct).
+            """
+            if not text or "|" not in text:
+                return text
+            import re as _re
+            out = text
+            # Generic row boundary for Wazuh-style tables: "alerts || Indexer" or "alerts | | Indexer"
+            # Only when table separator is present, otherwise "||" outside tables is left alone
+            if "---" in out and "||" in out:
+                out = _re.sub(r"\|\s*\|\s*", "|\n|", out)
+            elif "---" in out and "| |" in out:
+                out = _re.sub(r"\|\s*\|\s*", "|\n|", out)
+            elif "||" in out and "---" in out:
+                out = out.replace("||", "|\n|")
+            else:
+                # Fallback for separator-only collapse: "| Details ||---|---|"
+                if "||" in out and "---" in out:
+                    out = out.replace("||", "|\n|")
+                out = _re.sub(r"\|\s*\|\s*(?=-)", "|\n|", out)
+            # 1) Missing newline before separator row
+            out = _re.sub(r"([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)", lambda m: m.group(1) + "\n" + m.group(2).strip() if "---" in m.group(2) else m.group(0), out)
+            # 2) Separator glued to next data row: "|---|---| | What" -> "|---|---| \n| What"
+            out = _re.sub(r"(\|[-:\s|]+\|)\s+(\|)", lambda m: m.group(1) + "\n" + m.group(2) if "---" in m.group(1) else m.group(0), out)
+            return out
+
         async def _emit_sanitized(text: str) -> str:
             """Sanitize one complete segment and run output guardrails.
 
@@ -276,6 +309,7 @@ class ChatService(IChatService):
             sanitization. Guardrail blocks replace the segment with a short
             notice instead of failing the whole stream.
             """
+            text = _normalize_table_newlines(text)
             cleaned = clean_response(text)
             if not cleaned:
                 return ""
@@ -326,11 +360,31 @@ class ChatService(IChatService):
                 # the cap (artifact patterns are line-anchored, so a partial
                 # line cannot hide a ^-anchored match).
                 if len(buffer) >= _STREAM_FLUSH_CHARS and emitted < _MAX_STREAM_CHARS:
-                    frame = await _emit_sanitized(buffer)
-                    frame = _deliver(buffer, frame)
-                    if frame:
-                        yield frame
-                    buffer = ""
+                    # Normalize table newlines before flush so a collapsed
+                    # "| Details ||---|---|" inside the 512-char window
+                    # becomes two proper lines.
+                    buffer = _normalize_table_newlines(buffer)
+                    # If normalization introduced newlines, emit line-by-line
+                    # to keep markdown structure, otherwise emit as single chunk
+                    if "\n" in buffer:
+                        while "\n" in buffer and emitted < _MAX_STREAM_CHARS:
+                            line, buffer = buffer.split("\n", 1)
+                            frame = await _emit_sanitized(line + "\n")
+                            frame = _deliver(line + "\n", frame)
+                            if frame:
+                                yield frame
+                        if buffer and emitted < _MAX_STREAM_CHARS and len(buffer) >= _STREAM_FLUSH_CHARS:
+                            frame = await _emit_sanitized(buffer)
+                            frame = _deliver(buffer, frame)
+                            if frame:
+                                yield frame
+                            buffer = ""
+                    else:
+                        frame = await _emit_sanitized(buffer)
+                        frame = _deliver(buffer, frame)
+                        if frame:
+                            yield frame
+                        buffer = ""
             if buffer and emitted < _MAX_STREAM_CHARS:
                 frame = await _emit_sanitized(buffer)
                 frame = _deliver(buffer, frame)

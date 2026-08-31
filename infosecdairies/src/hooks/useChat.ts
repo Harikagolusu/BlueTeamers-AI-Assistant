@@ -584,7 +584,89 @@ export function useChat(onNewConversation?: (id: string) => void) {
           const lastMsg = newMessages[newMessages.length - 1];
 
           if (token) {
-            lastMsg.content += token;
+            // Fix table row concatenation during streaming (issue: "| Details ||---|---|| What |" collapsed)
+            // Two failure modes:
+            // 1) Intra-token: safety-valve flush (512 chars) yields single token with "||---|---|" inside (no \n)
+            // 2) Inter-token: "| Details |" + "|---|---|" streamed as separate SSE tokens without \n
+            // We normalize both the incoming token and the boundary.
+            const normalizeTableChunk = (s: string): string => {
+              if (!s.includes("|")) return s;
+              let out = s;
+              // Generic row boundary: "alerts || Indexer" or "alerts | | Indexer" -> "alerts |\n| Indexer"
+              // Only when table separator "---" is present, to avoid breaking non-table "||" uses
+              // This fixes Wazuh image where only first 2 rows rendered and rest collapsed as "|| Indexer"
+              if (out.includes("---") || out.includes("||") || out.includes("| |")) {
+                out = out.replace(/\|\s*\|\s*/g, "|\n|");
+              }
+              // Missing newline before separator row when previous text has no \n: "Details | |---|---|"
+              out = out.replace(/([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)/g, (m, p1, p2) => {
+                if (p2.includes("---")) return p1 + "\n" + p2.trimStart();
+                return m;
+              });
+              // Separator row directly glued to next data row: "|---|---| | **What** |" -> "|---|---| \n| **What** |"
+              out = out.replace(/(\|[-:\s|]+\|)\s+(\|)/g, (m, a, b) => (a.includes("---") ? a + "\n" + b : m));
+              return out;
+            };
+            let toAppend = normalizeTableChunk(token);
+            const prev = lastMsg.content;
+            if (prev && toAppend) {
+              const prevTrimEnd = prev.trimEnd();
+              const tokenTrimStart = toAppend.trimStart();
+              const prevEndsPipe = prevTrimEnd.endsWith("|");
+              const prevEndsSep = prevTrimEnd.endsWith("---");
+              const nextStartsPipe = tokenTrimStart.startsWith("|");
+              const nextStartsSep = /^\|\s*:?-{3,}/.test(tokenTrimStart);
+              if (nextStartsPipe) {
+                // Table row boundary: pipe -> pipe needs single newline
+                if ((prevEndsPipe || prevEndsSep) && nextStartsPipe) {
+                  if (!prev.endsWith("\n")) {
+                    toAppend = "\n" + toAppend.trimStart();
+                  }
+                } else if (nextStartsSep) {
+                  // separator row starting fresh
+                  if (!prev.endsWith("\n")) {
+                    toAppend = "\n" + toAppend.trimStart();
+                  }
+                } else {
+                  // Paragraph text -> table header (e.g. "you asked for." + "| Aspect |")
+                  // Markdown tables require a blank line before the header. History works
+                  // because persisted join adds it, but streaming tokens arrive without.
+                  if (!prev.endsWith("\n")) {
+                    toAppend = "\n\n" + toAppend.trimStart();
+                  } else if (!prev.endsWith("\n\n")) {
+                    // prev ends with single \n (e.g. intro "Great question!\n") - ensure blank line
+                    toAppend = "\n" + toAppend.trimStart();
+                  }
+                }
+              } else if (nextStartsSep) {
+                if (!prev.endsWith("\n")) {
+                  toAppend = "\n" + toAppend.trimStart();
+                }
+              } else if (prevEndsPipe && toAppend.trim().length > 0) {
+                // Table row -> paragraph (e.g. "| ... |" + "**Real-world example:**")
+                // Needs blank line to close table, otherwise paragraph is swallowed into last cell
+                // BUT if toAppend still contains "|" it's a continuation of the same row's cells
+                // (e.g. "| Central Server |" + " Aggregates... | Runs... |") -> do NOT add newline
+                const isCellContinuation = toAppend.includes("|");
+                if (!isCellContinuation) {
+                  if (!prev.endsWith("\n")) {
+                    toAppend = "\n\n" + toAppend.trimStart();
+                  } else if (!prev.endsWith("\n\n")) {
+                    toAppend = "\n" + toAppend.trimStart();
+                  }
+                }
+                // else: cell continuation like " Aggregates... |" -> append directly to same row
+              }
+            }
+            // Final safety: if concatenation still left a collapsed table, fix the whole message once
+            const combined = prev + toAppend;
+            if (combined.includes("||") || combined.includes("|---|")) {
+              lastMsg.content = normalizeTableChunk(combined)
+                // collapse accidental triple newlines from double-fix
+                .replace(/\n{3,}/g, "\n\n");
+            } else {
+              lastMsg.content = combined;
+            }
           }
 
           // Inject metadata if it arrives

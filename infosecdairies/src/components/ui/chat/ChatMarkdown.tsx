@@ -85,8 +85,35 @@ interface ChatMarkdownProps {
   isStreaming?: boolean;
 }
 
+function normalizeTableMarkdown(s: string): string {
+  if (!s || !s.includes("|")) return s;
+  // Defense for both streaming and persisted messages: fix collapsed tables
+  // e.g. "| Aspect | Details ||---|---|| What |" -> proper multiline table
+  // and "alerts || Indexer" (Wazuh data-row -> data-row) -> "alerts |\n| Indexer"
+  let out = s;
+  // Generic row boundary for Wazuh-style tables: "alerts || Indexer" or "alerts | | Indexer"
+  // Only when table separator "---" is present, so non-table "||" (code) is untouched
+  if (out.includes("---")) {
+    out = out.replace(/\|\s*\|\s*/g, "|\n|");
+  } else if (out.includes("||")) {
+    out = out.replace(/\|\s*\|\s*(?=-)/g, "|\n|");
+  }
+  out = out.replace(/([^\n])\s+(\|\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|)/g, (m, p1, p2) =>
+    p2.includes("---") ? p1 + "\n" + p2.trimStart() : m
+  );
+  out = out.replace(/(\|[-:\s|]+\|)\s+(\|)/g, (m, a, b) => (a.includes("---") ? a + "\n" + b : m));
+  // Generic collapsed rows where "||" remains (header -> separator, separator -> row)
+  if (out.includes("||")) {
+    out = out.replace(/\|\|\s*/g, "|\n|");
+  }
+  out = out.replace(/\n{3,}/g, "\n\n");
+  // Ensure table is not inline after paragraph (final safety for streaming)
+  out = out.replace(/([^\n])\n(\| [^\n]*\|[^\n]*\n\|[-:\s|]+\|)/g, "$1\n\n$2");
+  return out;
+}
+
 export function ChatMarkdown({ children, isStreaming = false }: ChatMarkdownProps) {
-  const content = children || "";
+  const content = normalizeTableMarkdown(children || "");
   const markdown = (
     <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
       {content}
