@@ -35,6 +35,15 @@
       else toAppend = "\n" + tokenTrimStart; // "entry point." → "\n- Parsing"
     }
   }
+  else if (prev.includes("\n- ") && toAppend.trim().length>0 && !toAppend.includes("|")) {
+    // bullet list -> paragraph after list: last bullet "tools." + "**Real-world example:**" / "### Continue" / "From a SOC"
+    // Without blank line, paragraph is swallowed into last bullet (image: "tools.Real-world example:")
+    const nextIsListContinuation = /^(- |\* |• |\d+\. )/.test(tokenTrimStart) || tokenTrimStart.startsWith("|");
+    if (!nextIsListContinuation) {
+      if (!prev.endsWith("\n")) toAppend = "\n\n" + toAppend.trimStart();
+      else if (!prev.endsWith("\n\n")) toAppend = "\n" + toAppend.trimStart();
+    }
+  }
   ```
 - Table `prevEndsPipe && !nextStartsPipe` now checks `isCellContinuation = toAppend.includes("|")` to avoid breaking `| Central Server |` + ` Aggregates... |` same-row cells (keeps same row, only `**Real-world...` without `|` gets `\n\n`).
 
@@ -47,6 +56,15 @@
     if (out.includes("\n- ") || out.match(/(^|\n)\s*-\s+\*\*/))
       out = out.replace(/([^\n\u2013])\s+-\s+(?=\*\*|[A-Z])/g, ...);
     out = out.replace(/([^\n:])\n(- \*\*[^\n]*)/g, "$1\n\n$2");
+    // Bullet list -> paragraph after list: last bullet "tools." + "**Real-world example:" / "From a SOC" / "### Continue"
+    if (out.includes("\n- ")) {
+      out = out.replace(/([^\n])\s*(\*\*Real-world example:)/g, "$1\n\n$2");
+      out = out.replace(/([^\n])\s*(From a SOC analyst's perspective:)/g, "$1\n\n$2");
+      out = out.replace(/([^\n])\s*(### Continue Learning)/g, "$1\n\n$2");
+      out = out.replace(/([^\n])\s*(This topic is covered in:)/g, "$1\n\n$2");
+      out = out.replace(/(\n- [^\n]*)\n(?!\n)(?=\*\*|From a SOC|###|This topic|> \*\*)/g, "$1\n\n");
+      out = out.replace(/([a-z0-9\.])\s*(\*\*Real-world)/g, "$1\n\n$2");
+    }
   }
   out = out.replace(/\n{3,}/g, "\n\n");
   ```
@@ -69,4 +87,6 @@
 
 **User Action:** Hard refresh `Ctrl+Shift+R` ×2 on `https://192.168.1.17:3001/chat` and `http://192.168.1.6:5173` to load new `useChat.js` / `ChatMarkdown.js`. No DB migration.
 
-**Commit:** `c869f3a` `fix(bullet): streaming bullet list collapse` (3 files). This MD is separate doc commit.
+**Follow-up (2026-08-31 later):** Everything coming in bullets (`Investigation Pivot – ...tools.Real-world example:` inside same bullet). Added bullet->paragraph blank line: `prev.includes("\n- ")` + next is `**Real-world` / `From a SOC` / `### Continue` → `"\n\n"` in `useChat.ts:677` and `ChatMarkdown.tsx:88` plus `service.py` defense. Ensures last bullet `Investigation Pivot – ...tools.` + `**Real-world example:**` closes list instead of swallowing paragraph.
+
+**Commits:** `c869f3a` `fix(bullet): streaming bullet list collapse` (3 files) + `1113046` docs: bullet report (this file) + follow-up fix pending push (same 3 files + this MD update).

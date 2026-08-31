@@ -674,6 +674,19 @@ export function useChat(onNewConversation?: (id: string) => void) {
                     toAppend = "\n" + tokenTrimStart;
                   }
                 }
+              } else if (prev.includes("\n- ") && toAppend.trim().length > 0 && !toAppend.includes("|")) {
+                // Previous was bullet list, next is paragraph/heading after list (e.g., last bullet "Investigation Pivot" + "**Real-world example:**")
+                // Without blank line, paragraph is swallowed into last bullet (as seen in image: "tools.Real-world example:")
+                // Detect list -> non-list transition: prev had bullets, next is not bullet/table
+                const nextIsListContinuation = /^(- |\* |• |\d+\. )/.test(tokenTrimStart) || tokenTrimStart.startsWith("|");
+                if (!nextIsListContinuation) {
+                  // Next is paragraph like "**Real-world example:**", "From a SOC...", "### Continue", "This topic..."
+                  if (!prev.endsWith("\n")) {
+                    toAppend = "\n\n" + toAppend.trimStart();
+                  } else if (!prev.endsWith("\n\n")) {
+                    toAppend = "\n" + toAppend.trimStart();
+                  }
+                }
               } else if (prevEndsPipe && toAppend.trim().length > 0) {
                 // Table row -> paragraph (e.g. "| ... |" + "**Real-world example:**")
                 // Needs blank line to close table, otherwise paragraph is swallowed into last cell

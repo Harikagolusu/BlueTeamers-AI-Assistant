@@ -124,6 +124,19 @@ function normalizeMarkdown(s: string): string {
     }
     // Ensure first bullet after intro paragraph has blank line (defense for streaming inter-token)
     out = out.replace(/([^\n:])\n(- \*\*[^\n]*)/g, "$1\n\n$2");
+    // Bullet list -> paragraph after list: last bullet "tools.Real-world example:" without blank line
+    // Image showed "Investigation Pivot – ...tools.Real-world example: 20 login..." inside same bullet
+    if (out.includes("\n- ")) {
+      out = out.replace(/([^\n])\s*(\*\*Real-world example:)/g, "$1\n\n$2");
+      out = out.replace(/([^\n])\s*(From a SOC analyst's perspective:)/g, "$1\n\n$2");
+      out = out.replace(/([^\n])\s*(### Continue Learning)/g, "$1\n\n$2");
+      out = out.replace(/([^\n])\s*(This topic is covered in:)/g, "$1\n\n$2");
+      // Generic bullet->paragraph: bullet line ending then paragraph without blank line
+      out = out.replace(/(\n- [^\n]*)\n(?!\n)(?=\*\*|From a SOC|###|This topic|> \*\*)/g, "$1\n\n");
+      // Fix "tools.Real-world" collapsed without space/newline: "tools.Real-world"
+      out = out.replace(/([a-z0-9\.])\s*(\*\*Real-world)/g, "$1\n\n$2");
+      out = out.replace(/([a-z\.])\s*(From a SOC)/g, "$1\n\n$2");
+    }
   }
   out = out.replace(/\n{3,}/g, "\n\n");
   return out;
