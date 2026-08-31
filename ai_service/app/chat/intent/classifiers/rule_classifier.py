@@ -40,10 +40,21 @@ def _has_phrase(query_lower: str, phrase: str) -> bool:
 # Platform detection signals (specificity-ordered).
 # The FIRST matching group wins → the most specific platform intent.
 # ------------------------------------------------------------------ #
+# PLATFORM_ASSESSMENT is for viewing past scores/results, NOT for
+# generating a new quiz ("give me a quiz on X" -> ASSESSMENT domain).
+# Require ownership/result context to avoid hijacking generation requests
+# like "Give me a 5-question quiz on Network Security Monitoring".
 _PLATFORM_ASSESSMENT = [
-    "assessment", "assessments", "quiz", "quizzes", "exam", "exams",
-    "grade", "grades", "score", "scores", "which assessment",
-    "recommend an assessment",
+    "my assessment", "my assessments", "my quiz", "my quizzes",
+    "my exam", "my exams", "my grade", "my grades", "my score", "my scores",
+    "assessment score", "assessment scores", "quiz score", "quiz scores",
+    "exam score", "exam scores", "assessment result", "assessment results",
+    "quiz result", "quiz results", "exam result", "exam results",
+    "show my assessment", "show my quiz", "view my assessment", "view my quiz",
+    "which assessment", "recommend an assessment",
+    # bare "grade/scores" only when clearly about platform results, not
+    # generic quiz generation - keep but they are lower risk than "quiz"
+    "grade", "grades",
 ]
 _PLATFORM_CERTIFICATE = [
     "certificate", "certificates", "certification", "certifications",

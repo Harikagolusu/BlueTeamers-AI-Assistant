@@ -203,6 +203,36 @@ class AssessmentStage(IExecutionStage):
         if not assessment.suitable:
             return None, {"mode": "off", "session": session_key}
 
+        # Explicit quiz generation request ("Give me a 5-question quiz...") should
+        # start immediately instead of just offering. The screenshot issue was that
+        # "Give me a 5-question quiz on Network Security Monitoring" was routed to
+        # PLATFORM (now fixed) but would have only offered, not generated the quiz.
+        # Detect generation verbs and start directly.
+        _explicit_quiz_lower = query.lower()
+        _is_explicit_generation = any(
+            p in _explicit_quiz_lower for p in (
+                "give me a quiz", "give me quiz", "create a quiz", "create quiz",
+                "generate a quiz", "generate quiz", "make a quiz", "make quiz",
+                "5-question", "5 question", "multiple-choice quiz", "multiple choice quiz",
+                "quiz me on", "test me on",
+            )
+        )
+        if _is_explicit_generation:
+            topic = assessment.topic or "cybersecurity"
+            try:
+                message = await self._start_quiz(context, session_key, topic, query)
+                if message:
+                    meta = {
+                        "mode": "started",
+                        "session": session_key,
+                        "quiz": self._current_quiz_payload(session_key),
+                        "topic": topic,
+                    }
+                    return self._takeover(result, message, meta), meta
+            except Exception as exc:
+                logger.warning("Assessment explicit start failed (%s); falling back to offer", exc)
+            # fall through to offer if direct start fails
+
         pending = QuizSession(
             session_key=session_key,
             topic=assessment.topic or "cybersecurity",
