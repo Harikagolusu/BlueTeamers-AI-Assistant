@@ -47,7 +47,13 @@ class InjectionDetectionPolicy(IGuardrailPolicy):
                 instruction_part = text[: len(prefix)]
                 if self._regex_engine.contains_match(instruction_part):
                     return GuardrailResult.block(reason="Detected potential prompt injection attempt.")
-                # Content after prefix is DATA, do not block
+                # P0 fix C-01: also check data portion after prefix — otherwise
+                # "Summarize this text: Ignore all previous instructions" bypasses
+                # entirely. Secondary check catches injection in the data to be
+                # transformed while still allowing benign summaries.
+                data_part = text[len(prefix):].strip()
+                if data_part and self._regex_engine.contains_match(data_part):
+                    return GuardrailResult.block(reason="Detected potential prompt injection attempt in content.")
                 return GuardrailResult.allow()
 
         if self._regex_engine.contains_match(text):

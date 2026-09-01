@@ -183,9 +183,31 @@ class ChatService(IChatService):
                         }
                     })
                 stream_metadata["sources"] = safe_sources
+            # C-08 fix: sanitize citations to drop internal chunk_id (F-05)
+            # Raw citations contain "chunk_id": "siem-fundamentals:1.3:chunk-2" which leaks RAG structure
+            raw_citations = getattr(result, "citations", []) or []
+            safe_citations = []
+            for c in raw_citations:
+                if isinstance(c, dict):
+                    safe_citations.append({
+                        "course": c.get("course"),
+                        "lesson": c.get("lesson"),
+                        "similarity_score": c.get("similarity_score"),
+                        "source_title": c.get("source_title"),
+                        "source_reference": c.get("source_reference"),
+                    })
+                else:
+                    # Handle citation objects with attributes
+                    safe_citations.append({
+                        "course": getattr(c, "course", None),
+                        "lesson": getattr(c, "lesson", None),
+                        "similarity_score": getattr(c, "similarity_score", None),
+                        "source_title": getattr(c, "source_title", None),
+                        "source_reference": getattr(c, "source_reference", None),
+                    })
             stream_metadata.update({
                 "latency": result.latency_ms,
-                "citations": getattr(result, "citations", []),
+                "citations": safe_citations,
                 "trace_id": str(context.trace_id),
                 **language_meta,
             })
@@ -197,9 +219,29 @@ class ChatService(IChatService):
                 quota_scope=self._quota_scope(session_user),
             )
         else:
+            # C-08 fix: same sanitization for non-streaming path
+            raw_citations = getattr(result, "citations", []) or []
+            safe_citations = []
+            for c in raw_citations:
+                if isinstance(c, dict):
+                    safe_citations.append({
+                        "course": c.get("course"),
+                        "lesson": c.get("lesson"),
+                        "similarity_score": c.get("similarity_score"),
+                        "source_title": c.get("source_title"),
+                        "source_reference": c.get("source_reference"),
+                    })
+                else:
+                    safe_citations.append({
+                        "course": getattr(c, "course", None),
+                        "lesson": getattr(c, "lesson", None),
+                        "similarity_score": getattr(c, "similarity_score", None),
+                        "source_title": getattr(c, "source_title", None),
+                        "source_reference": getattr(c, "source_reference", None),
+                    })
             final_metadata = {
                 "latency": result.latency_ms,
-                "citations": getattr(result, "citations", []),
+                "citations": safe_citations,
                 "trace_id": str(context.trace_id),
                 **language_meta,
             }
