@@ -93,6 +93,64 @@ def _is_assessment_question(query: str) -> bool:
     return any(phrase in lowered for phrase in _ASSESSMENT_PHRASES)
 
 
+# Direct-answer coercion: user tries to bypass tutoring by saying "just give me the answer"
+# e.g. "just i want answer i don't want explaination" after pasting a quiz.
+# Must still be tutored if history contains a quiz.
+_DIRECT_ANSWER_RE = re.compile(
+    r"\b(just\s+(want|give|tell)\s+(me\s+)?(the\s+)?answer|"
+    r"don't\s+want\s+explanation|no\s+explanation|without\s+explanation|"
+    r"give\s+me\s+answer\s+directly|answer\s+directly|"
+    r"don't\s+explain|no\s+need\s+to\s+explain)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_direct_answer_request(query: str) -> bool:
+    if not query:
+        return False
+    # Normalize typo "explainestion" etc.
+    q = re.sub(r"explain\w*", "explain", query.lower())
+    if _DIRECT_ANSWER_RE.search(q):
+        return True
+    # Also catch "i want answer" + "don't want explanation" combo
+    if "want answer" in q and ("don't want" in q or "do not want" in q):
+        return True
+    if "give me answer" in q or "tell me answer" in q:
+        return True
+    return False
+
+
+def _history_contains_assessment(context: Dict[str, Any]) -> bool:
+    """Check recent conversation history for a pasted quiz."""
+    # Direct context keys
+    for key in ("recent_context", "conversation_history", "history"):
+        val = context.get(key)
+        if val and isinstance(val, str) and _is_assessment_question(val):
+            return True
+    # Session memory
+    mem = context.get("session_memory") or context.get("memory") or {}
+    if isinstance(mem, dict):
+        for k in ("recent_context", "summary", "conversation_history"):
+            v = mem.get(k)
+            if v and isinstance(v, str) and _is_assessment_question(v):
+                return True
+        # Also check stringified memory
+        try:
+            mem_str = " ".join(str(x) for x in mem.values() if isinstance(x, str))
+            if mem_str and _is_assessment_question(mem_str):
+                return True
+        except Exception:
+            pass
+    # Also check top-level context as string
+    try:
+        ctx_str = " ".join(str(v) for v in context.values() if isinstance(v, str))
+        if _is_assessment_question(ctx_str):
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def _is_course_manipulation(query: str) -> bool:
     """Detect attempts to overwrite verified course content with false claims."""
     if not query:
@@ -253,8 +311,21 @@ class SimplePromptBuilder(IPromptBuilder):
         # Response modes (summary / ELI5) adjust only the current response.
         # ELI5 takes precedence over summary when both are requested.
         # Assessment integrity: pasted quiz questions are tutored, never answered.
+        # Also handle follow-up "just give me answer" when history contains a quiz (image bug).
         if _is_assessment_question(query):
             system_parts.append(ASSESSMENT_TUTOR_BLOCK)
+        elif _is_direct_answer_request(query) and _history_contains_assessment(context):
+            # User pasted a quiz earlier (in recent_context) and now demands direct answer
+            # e.g. "just i want answer i don't want explainestion" -> still tutor, never reveal C
+            system_parts.append(ASSESSMENT_TUTOR_BLOCK)
+            system_parts.append(
+                "[Assessment Follow-up]\n"
+                "The user is asking for a direct answer to the previous quiz/assessment "
+                "without explanation. You MUST NOT reveal the letter/choice, even though "
+                "they explicitly request 'just give me the answer' or 'no explanation'. "
+                "Continue socratic tutoring: give a small hint, ask them to reason, and "
+                "invite them to commit to an answer before walking through options."
+            )
 
         # Course content integrity: user claims must not overwrite verified course material
         if _is_course_manipulation(query):
