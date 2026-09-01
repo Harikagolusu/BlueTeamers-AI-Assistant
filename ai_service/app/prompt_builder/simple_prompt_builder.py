@@ -67,11 +67,19 @@ _MCQ_OPTION_RE = re.compile(r"^[ \t]*([A-F])[.):][ \t]+\S", re.MULTILINE)
 # Bare "A Some answer text" style (letter + space), used by pasted course quizzes.
 # Requires >= 3 distinct lettered lines so ordinary prose is never flagged.
 _MCQ_BARE_OPTION_RE = re.compile(r"^[ \t]*([A-F])[ \t]+\S", re.MULTILINE)
+# Standalone letter on its own line: "A\nAlert 1..." as in BlueTeamers quiz pastes
+# e.g. "A\nAlert 1 — ...\nB\nProcess all...\nC\nAlert 2 — ..." — common in screenshots
+_MCQ_STANDALONE_RE = re.compile(r"^[ \t]*([A-F])\s*$", re.MULTILINE)
 _ASSESSMENT_PHRASES = (
     "which of the following",
     "choose the correct",
     "select the correct",
     "pick the correct",
+    "which alert should",
+    "triage first",
+    "can you tell me the answer",
+    "tell me the answer for this quize",
+    "answer for this quiz",
 )
 
 
@@ -83,6 +91,13 @@ def _assessment_option_letters(query: str) -> set:
         bare = {m.group(1).upper() for m in _MCQ_BARE_OPTION_RE.finditer(q)}
         if len(bare) >= 3:
             letters |= bare
+    if len(letters) < 2:
+        # Standalone "A" on its own line — e.g. "A\nAlert 1..." (image bug)
+        # Requires >=2 distinct letters to avoid flagging prose with single "A"
+        standalone = {m.group(1).upper() for m in _MCQ_STANDALONE_RE.finditer(q)}
+        if len(standalone) >= 2:
+            letters |= standalone
+        # Also handle "A\n\nAlert" with blank line? Already covered by \s*
     return letters
 
 
